@@ -28,19 +28,145 @@
             </header>
 
             <div class="admin-content">
-                <!-- 统计信息 -->
+                <!-- 总体统计信息 -->
                 <div class="stats-panel">
-                    <div class="stat-card">
+                    <div class="stat-card total">
                         <div class="stat-label">总兑换码数</div>
                         <div class="stat-value" id="totalCodes">0</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card used">
                         <div class="stat-label">已使用</div>
                         <div class="stat-value" id="usedCodes">0</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">未使用</div>
+                    <div class="stat-card available">
+                        <div class="stat-label">可用</div>
                         <div class="stat-value" id="unusedCodes">0</div>
+                    </div>
+                </div>
+
+                <!-- 分类统计面板 -->
+                <div class="category-stats-panel">
+                    <h3>兑换码分类统计</h3>
+                    <div class="category-grid">
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-name">🎁 参与奖</span>
+                                <span class="category-value">1元优惠券</span>
+                            </div>
+                            <div class="category-stats">
+                                <div class="stat-item">
+                                    <span class="label">总数:</span>
+                                    <span class="value" id="total-参与奖">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">已用:</span>
+                                    <span class="value used-count" id="used-参与奖">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">剩余:</span>
+                                    <span class="value available-count" id="available-参与奖">0</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-参与奖" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-name">🥉 铜质奖励</span>
+                                <span class="category-value">5元兑换码</span>
+                            </div>
+                            <div class="category-stats">
+                                <div class="stat-item">
+                                    <span class="label">总数:</span>
+                                    <span class="value" id="total-铜质奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">已用:</span>
+                                    <span class="value used-count" id="used-铜质奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">剩余:</span>
+                                    <span class="value available-count" id="available-铜质奖励">0</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-铜质奖励" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-name">🥈 银质奖励</span>
+                                <span class="category-value">10元兑换码</span>
+                            </div>
+                            <div class="category-stats">
+                                <div class="stat-item">
+                                    <span class="label">总数:</span>
+                                    <span class="value" id="total-银质奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">已用:</span>
+                                    <span class="value used-count" id="used-银质奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">剩余:</span>
+                                    <span class="value available-count" id="available-银质奖励">0</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-银质奖励" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-name">🥇 金质奖励</span>
+                                <span class="category-value">50元兑换码</span>
+                            </div>
+                            <div class="category-stats">
+                                <div class="stat-item">
+                                    <span class="label">总数:</span>
+                                    <span class="value" id="total-金质奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">已用:</span>
+                                    <span class="value used-count" id="used-金质奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">剩余:</span>
+                                    <span class="value available-count" id="available-金质奖励">0</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-金质奖励" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="category-card">
+                            <div class="category-header">
+                                <span class="category-name">💎 星钻奖励</span>
+                                <span class="category-value">100元兑换码</span>
+                            </div>
+                            <div class="category-stats">
+                                <div class="stat-item">
+                                    <span class="label">总数:</span>
+                                    <span class="value" id="total-星钻奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">已用:</span>
+                                    <span class="value used-count" id="used-星钻奖励">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="label">剩余:</span>
+                                    <span class="value available-count" id="available-星钻奖励">0</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-星钻奖励" style="width: 0%"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
