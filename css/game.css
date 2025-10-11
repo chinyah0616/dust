@@ -687,3 +687,9 @@ body {
         font-size: 28px;
     }
 }
+/* 游戏次数限制显示 */
+.play-limit-info {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+
