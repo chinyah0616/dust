@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星尘收集者 - 后台管理</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div id="loginScreen" class="screen">
+        <div class="login-panel">
+            <h1>后台管理系统</h1>
+            <div class="input-group">
+                <input type="password" id="passwordInput" placeholder="请输入管理密码">
+                <button id="loginBtn">登录</button>
+            </div>
+            <div id="loginError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- 管理界面 -->
+    <div id="adminScreen" class="screen" style="display: none;">
+        <div class="admin-container">
+            <header class="admin-header">
+                <h1>星尘收集者 - 兑换码管理</h1>
+                <button id="logoutBtn" class="logout-btn">退出</button>
+            </header>
+
+            <div class="admin-content">
+                <!-- 统计信息 -->
+                <div class="stats-panel">
+                    <div class="stat-card">
+                        <div class="stat-label">总兑换码数</div>
+                        <div class="stat-value" id="totalCodes">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">已使用</div>
+                        <div class="stat-value" id="usedCodes">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">未使用</div>
+                        <div class="stat-value" id="unusedCodes">0</div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-panel">
+                    <button id="addCodeBtn" class="action-btn primary">添加兑换码</button>
+                    <button id="deleteUsedBtn" class="action-btn warning">删除已使用</button>
+                    <button id="clearAllBtn" class="action-btn danger">清空所有</button>
+                    <button id="refreshBtn" class="action-btn">刷新列表</button>
+                </div>
+
+                <!-- 添加兑换码表单 -->
+                <div id="addCodeForm" class="form-panel" style="display: none;">
+                    <h3>添加新兑换码</h3>
+                    <div class="form-group">
+                        <label>兑换码</label>
+                        <input type="text" id="codeInput" placeholder="输入兑换码">
+                    </div>
+                    <div class="form-group">
+                        <label>奖励等级</label>
+                        <select id="levelSelect">
+                            <option value="参与奖">参与奖（1元优惠券）</option>
+                            <option value="铜质奖励">铜质奖励（5元兑换码）</option>
+                            <option value="银质奖励">银质奖励（10元兑换码）</option>
+                            <option value="金质奖励">金质奖励（50元兑换码）</option>
+                            <option value="星钻奖励">星钻奖励（100元兑换码）</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveCodeBtn" class="btn-save">保存</button>
+                        <button id="cancelAddBtn" class="btn-cancel">取消</button>
+                    </div>
+                </div>
+
+                <!-- 兑换码列表 -->
+                <div class="codes-panel">
+                    <h3>兑换码列表</h3>
+                    <div class="filter-bar">
+                        <select id="filterLevel">
+                            <option value="all">所有等级</option>
+                            <option value="参与奖">参与奖</option>
+                            <option value="铜质奖励">铜质奖励</option>
+                            <option value="银质奖励">银质奖励</option>
+                            <option value="金质奖励">金质奖励</option>
+                            <option value="星钻奖励">星钻奖励</option>
+                        </select>
+                        <select id="filterStatus">
+                            <option value="all">所有状态</option>
+                            <option value="unused">未使用</option>
+                            <option value="used">已使用</option>
+                        </select>
+                    </div>
+                    <div class="codes-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>兑换码</th>
+                                    <th>等级</th>
+                                    <th>状态</th>
+                                    <th>使用时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="codesTableBody">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/security.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

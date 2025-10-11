@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星尘收集者 - 赢取奖励</title>
+    <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+    <!-- 防调试保护 -->
+    <div id="debugger-warning" style="display:none;">
+        <h1>⚠️ 检测到非法操作</h1>
+        <p>请关闭开发者工具</p>
+    </div>
+
+    <!-- 游戏容器 -->
+    <div id="game-container">
+        <!-- 星空背景 -->
+        <div class="starfield">
+            <div class="stars"></div>
+            <div class="nebula"></div>
+        </div>
+
+        <!-- 游戏画布 -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- UI层 -->
+        <div class="game-ui">
+            <!-- 顶部信息栏 -->
+            <div class="top-bar glass-panel">
+                <div class="score-display">
+                    <span class="label">积分</span>
+                    <span class="value" id="score">0</span>
+                </div>
+                <div class="time-display">
+                    <span class="label">时间</span>
+                    <span class="value" id="timer">60</span>
+                </div>
+            </div>
+
+            <!-- 游戏开始界面 -->
+            <div id="start-screen" class="screen-overlay">
+                <div class="glass-panel main-panel">
+                    <h1 class="neon-text">星尘收集者</h1>
+                    <div class="rules">
+                        <h3>游戏规则</h3>
+                        <div class="rule-item">
+                            <span class="star-icon pink">★</span> 粉色星尘 = 10分
+                        </div>
+                        <div class="rule-item">
+                            <span class="star-icon green">★</span> 绿色星尘 = 20分
+                        </div>
+                        <div class="rule-item">
+                            <span class="star-icon rainbow">★</span> 彩虹星尘 = 50分
+                        </div>
+                        <div class="rule-item">
+                            <span class="black-hole">●</span> 避开黑洞 = -30分
+                        </div>
+                    </div>
+                    <button class="play-btn neon-btn" id="startBtn">
+                        <span>开始游戏</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 游戏结束界面 -->
+            <div id="end-screen" class="screen-overlay" style="display:none;">
+                <div class="glass-panel result-panel">
+                    <h2 class="neon-text">游戏结束</h2>
+                    <div class="final-score">
+                        <span>最终得分</span>
+                        <div class="score-value" id="finalScore">0</div>
+                    </div>
+                    <div class="reward-section" id="rewardSection">
+                        <div class="reward-level" id="rewardLevel"></div>
+                        <div class="reward-code" id="rewardCode" style="display:none;">
+                            <label>您的兑换码</label>
+                            <div class="code-display">
+                                <input type="text" id="codeText" readonly>
+                                <button class="copy-btn" id="copyBtn">复制</button>
+                            </div>
+                        </div>
+                        <div class="no-stock" id="noStock" style="display:none;">
+                            <p>😔 暂无库存</p>
+                            <p>请稍后再试</p>
+                        </div>
+                    </div>
+                    <button class="play-again-btn neon-btn" id="playAgainBtn">
+                        <span>再玩一次</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 粒子效果容器 -->
+        <div id="particles"></div>
+    </div>
+
+    <script src="js/sounds.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
