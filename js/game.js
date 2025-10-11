@@ -5,9 +5,9 @@ const GAME_CONFIG = {
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 70, // 黑洞尺寸
+    blackHoleSize: 60, // 黑洞尺寸
     stardustSpeed: 6, // 星尘速度
-    blackHoleSpeed: 9, // 黑洞速度
+    blackHoleSpeed: 10, // 黑洞速度
     spawnRate: 0.1, // 星尘生成率
     blackHoleSpawnRate: 0.15, // 增加黑洞生成率
     touchOffset: 50, // 触摸偏移量
