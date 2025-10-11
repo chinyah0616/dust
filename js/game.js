@@ -1,33 +1,33 @@
 // 游戏配置
 const GAME_CONFIG = {
-    duration: 30, // 游戏时长改为30秒
+    duration: 30, // 游戏时长30秒
     canvasWidth: 0,
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 70, // 增大黑洞尺寸
-    stardustSpeed: 4, // 加快星尘速度
-    blackHoleSpeed: 5, // 加快黑洞速度
-    spawnRate: 0.03, // 稍微增加星尘生成率
-    blackHoleSpawnRate: 0.008, // 稍微增加黑洞生成率
+    blackHoleSize: 80, // 增大黑洞尺寸
+    stardustSpeed: 6, // 加快星尘速度
+    blackHoleSpeed: 7, // 加快黑洞速度
+    spawnRate: 0.08, // 稍微增加星尘生成率
+    blackHoleSpawnRate: 0.08, // 稍微增加黑洞生成率
     touchOffset: 50 // 触摸偏移量，避免手指遮挡
 };
 
-// 积分配置 - 调整分数
+// 积分配置
 const SCORE_CONFIG = {
-    pink: 5,      // 粉色改为5分
-    green: 10,    // 绿色改为10分
-    rainbow: 25,  // 彩虹改为25分
-    blackHole: -30
+    pink: 5,      // 粉色5分
+    green: 10,    // 绿色10分
+    rainbow: 25,  // 彩虹25分
+    blackHole: -30 // 黑洞-30分
 };
 
-// 奖励等级配置 - 根据新的分数系统调整
+// 奖励等级配置 - 更新为新的积分区间
 const REWARD_LEVELS = [
-    { min: 0, max: 49, name: '参与奖', value: '1元优惠券' },
-    { min: 50, max: 149, name: '铜质奖励', value: '5元兑换码' },
-    { min: 150, max: 299, name: '银质奖励', value: '10元兑换码' },
-    { min: 300, max: 499, name: '金质奖励', value: '50元兑换码' },
-    { min: 500, max: Infinity, name: '星钻奖励', value: '100元兑换码' }
+    { min: 0, max: 299, name: '参与奖', value: '1元兑换码' },
+    { min: 300, max: 699, name: '铜质奖励', value: '5元兑换码' },
+    { min: 700, max: 999, name: '银质奖励', value: '10元兑换码' },
+    { min: 1000, max: 1999, name: '金质奖励', value: '50元兑换码' },
+    { min: 2000, max: Infinity, name: '星钻奖励', value: '100元兑换码' }
 ];
 
 // JSONBin配置
@@ -512,7 +512,7 @@ async function endGame() {
         window.GameSounds.playGameOverSound();
         
         // 如果得分很高，播放成功音效
-        if (gameState.score >= 300) {
+        if (gameState.score >= 1000) {
             setTimeout(() => {
                 window.GameSounds.playSuccessSound();
             }, 500);
@@ -545,7 +545,7 @@ async function endGame() {
     endScreen.style.display = 'flex';
     
     // 创建庆祝粒子效果
-    if (gameState.score >= 300) {
+    if (gameState.score >= 1000) {
         createCelebration();
     }
 }
