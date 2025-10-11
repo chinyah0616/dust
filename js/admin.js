@@ -1,8 +1,8 @@
 // 配置
 const ADMIN_PASSWORD = 'df90qh32rf9';
 const JSONBIN_CONFIG = {
-    binId: 'YOUR_BIN_ID', // 替换为您的JSONBin ID
-    apiKey: 'YOUR_API_KEY', // 替换为您的API密钥
+    binId: '68ea90cdae596e708f0eb402', // 替换为您的JSONBin ID
+    apiKey: '$2a$10$jm/VPb/omDLo8u4selSVL.VShILiV2Y2q5SZSDfB9yn3F5b6sgjT6', // 替换为您的API密钥
     apiUrl: 'https://api.jsonbin.io/v3/b/'
 };
 
@@ -12,10 +12,6 @@ const REWARD_CATEGORIES = ['参与奖', '铜质奖励', '银质奖励', '金质�
 // 全局变量
 let codesData = [];
 let isLoggedIn = false;
-let batchCodesPreview = {
-    valid: [],
-    duplicate: []
-};
 
 // DOM元素
 const loginScreen = document.getElementById('loginScreen');
@@ -45,10 +41,6 @@ const codesTableBody = document.getElementById('codesTableBody');
 const totalCodesDisplay = document.getElementById('totalCodes');
 const usedCodesDisplay = document.getElementById('usedCodes');
 const unusedCodesDisplay = document.getElementById('unusedCodes');
-const codeCount = document.getElementById('codeCount');
-const batchPreview = document.getElementById('batchPreview');
-const validCount = document.getElementById('validCount');
-const previewList = document.getElementById('previewList');
 
 // 登录功能
 function login() {
@@ -238,8 +230,6 @@ function showBatchAddForm() {
     batchAddForm.style.display = 'block';
     addCodeForm.style.display = 'none';
     batchCodesInput.value = '';
-    batchPreview.style.display = 'none';
-    updateBatchPreview();
 }
 
 // 隐藏添加兑换码表单
@@ -252,68 +242,6 @@ function hideAddCodeForm() {
 function hideBatchAddForm() {
     batchAddForm.style.display = 'none';
     batchCodesInput.value = '';
-    batchPreview.style.display = 'none';
-}
-
-// 更新批量预览
-function updateBatchPreview() {
-    const text = batchCodesInput.value.trim();
-    const lines = text.split('\n').filter(line => line.trim());
-    
-    // 更新计数
-    codeCount.textContent = lines.length;
-    
-    if (lines.length === 0) {
-        batchPreview.style.display = 'none';
-        return;
-    }
-    
-    // 分析兑换码
-    batchCodesPreview = {
-        valid: [],
-        duplicate: []
-    };
-    
-    const existingCodes = codesData.map(c => c.code.toUpperCase());
-    const currentBatch = [];
-    
-    lines.forEach(line => {
-        const code = line.trim();
-        
-        if (!code) {
-            return; // 跳过空行
-        }
-        
-        if (existingCodes.includes(code.toUpperCase()) || currentBatch.includes(code.toUpperCase())) {
-            batchCodesPreview.duplicate.push(code);
-        } else {
-            batchCodesPreview.valid.push(code);
-            currentBatch.push(code.toUpperCase());
-        }
-    });
-    
-    // 显示预览
-    if (lines.length > 0) {
-        batchPreview.style.display = 'block';
-        validCount.textContent = batchCodesPreview.valid.length;
-        
-        // 生成预览列表
-        let previewHTML = '';
-        
-        batchCodesPreview.valid.slice(0, 10).forEach(code => {
-            previewHTML += `<div class="preview-item valid">✓ ${code}</div>`;
-        });
-        
-        if (batchCodesPreview.valid.length > 10) {
-            previewHTML += `<div class="preview-item" style="text-align: center; color: #999;">... 还有 ${batchCodesPreview.valid.length - 10} 个兑换码</div>`;
-        }
-        
-        batchCodesPreview.duplicate.forEach(code => {
-            previewHTML += `<div class="preview-item duplicate">⚠ ${code} (已存在，将跳过)</div>`;
-        });
-        
-        previewList.innerHTML = previewHTML || '<div style="color: #999; text-align: center;">无兑换码</div>';
-    }
 }
 
 // 添加新兑换码
@@ -328,7 +256,7 @@ async function addCode() {
     }
     
     // 检查兑换码是否已存在
-    if (codesData.some(c => c.code.toUpperCase() === code.toUpperCase())) {
+    if (codesData.some(c => c.code === code)) {
         alert('该兑换码已存在');
         codeInput.focus();
         return;
@@ -364,25 +292,42 @@ async function addCode() {
 
 // 批量添加兑换码
 async function batchAddCodes() {
-    if (batchCodesPreview.valid.length === 0) {
-        alert('没有可以添加的兑换码（所有兑换码都已存在）');
+    const text = batchCodesInput.value.trim();
+    const lines = text.split('\n').filter(line => line.trim());
+    const level = batchLevelSelect.value;
+    
+    if (lines.length === 0) {
+        alert('请输入兑换码');
         return;
     }
     
-    const level = batchLevelSelect.value;
+    // 获取现有兑换码列表
+    const existingCodes = codesData.map(c => c.code);
     const newCodes = [];
+    let skippedCount = 0;
     
-    // 创建新兑换码对象
-    batchCodesPreview.valid.forEach(code => {
-        newCodes.push({
-            id: generateId(),
-            code: code,
-            level: level,
-            used: false,
-            createdAt: new Date().toISOString(),
-            usedAt: null
-        });
+    // 处理每个兑换码
+    lines.forEach(line => {
+        const code = line.trim();
+        if (code && !existingCodes.includes(code)) {
+            newCodes.push({
+                id: generateId(),
+                code: code,
+                level: level,
+                used: false,
+                createdAt: new Date().toISOString(),
+                usedAt: null
+            });
+            existingCodes.push(code); // 添加到临时列表，避免批量中的重复
+        } else if (code && existingCodes.includes(code)) {
+            skippedCount++;
+        }
     });
+    
+    if (newCodes.length === 0) {
+        alert('没有新的兑换码可以添加（全部重复）');
+        return;
+    }
     
     // 添加到数组
     codesData.push(...newCodes);
@@ -397,8 +342,8 @@ async function batchAddCodes() {
         hideBatchAddForm();
         
         let message = `成功添加 ${newCodes.length} 个兑换码`;
-        if (batchCodesPreview.duplicate.length > 0) {
-            message += `\n跳过 ${batchCodesPreview.duplicate.length} 个重复兑换码`;
+        if (skippedCount > 0) {
+            message += `\n跳过 ${skippedCount} 个重复兑换码`;
         }
         alert(message);
     } else {
@@ -539,9 +484,6 @@ function initEventListeners() {
     deleteUsedBtn.addEventListener('click', deleteUsedCodes);
     clearAllBtn.addEventListener('click', clearAllCodes);
     refreshBtn.addEventListener('click', refreshList);
-    
-    // 批量输入实时预览
-    batchCodesInput.addEventListener('input', updateBatchPreview);
     
     // 过滤器
     filterLevel.addEventListener('change', renderCodes);
