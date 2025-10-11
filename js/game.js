@@ -8,8 +8,8 @@ const GAME_CONFIG = {
     blackHoleSize: 80, // 黑洞尺寸
     stardustSpeed: 6, // 星尘速度
     blackHoleSpeed: 9, // 黑洞速度
-    spawnRate: 0.06, // 星尘生成率
-    blackHoleSpawnRate: 0.03, // 增加黑洞生成率
+    spawnRate: 0.15, // 星尘生成率
+    blackHoleSpawnRate: 0.5, // 增加黑洞生成率
     touchOffset: 50, // 触摸偏移量
     dailyPlayLimit: 3 // 每日游戏次数限制
 };
