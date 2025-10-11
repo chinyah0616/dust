@@ -5,11 +5,11 @@ const GAME_CONFIG = {
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 80, // 黑洞尺寸
+    blackHoleSize: 70, // 黑洞尺寸
     stardustSpeed: 6, // 星尘速度
     blackHoleSpeed: 9, // 黑洞速度
-    spawnRate: 0.12, // 星尘生成率
-    blackHoleSpawnRate: 0.20, // 增加黑洞生成率
+    spawnRate: 0.1, // 星尘生成率
+    blackHoleSpawnRate: 0.18, // 增加黑洞生成率
     touchOffset: 50, // 触摸偏移量
     dailyPlayLimit: 3 // 每日游戏次数限制
 };
