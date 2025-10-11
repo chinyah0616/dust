@@ -9,7 +9,7 @@ const GAME_CONFIG = {
     stardustSpeed: 6, // 加快星尘速度
     blackHoleSpeed: 8, // 加快黑洞速度
     spawnRate: 0.08, // 稍微增加星尘生成率
-    blackHoleSpawnRate: 0.08, // 稍微增加黑洞生成率
+    blackHoleSpawnRate: 0.12, // 稍微增加黑洞生成率
     touchOffset: 50 // 触摸偏移量，避免手指遮挡
 };
 
