@@ -5,12 +5,13 @@ const GAME_CONFIG = {
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 85, // 增大黑洞尺寸
-    stardustSpeed: 6, // 加快星尘速度
-    blackHoleSpeed: 8, // 加快黑洞速度
-    spawnRate: 0.08, // 稍微增加星尘生成率
-    blackHoleSpawnRate: 0.12, // 稍微增加黑洞生成率
-    touchOffset: 50 // 触摸偏移量，避免手指遮挡
+    blackHoleSize: 80, // 黑洞尺寸
+    stardustSpeed: 6, // 星尘速度
+    blackHoleSpeed: 8, // 黑洞速度
+    spawnRate: 0.05, // 星尘生成率
+    blackHoleSpawnRate: 0.015, // 增加黑洞生成率
+    touchOffset: 50, // 触摸偏移量
+    dailyPlayLimit: 3 // 每日游戏次数限制
 };
 
 // 积分配置
@@ -21,7 +22,7 @@ const SCORE_CONFIG = {
     blackHole: -30 // 黑洞-30分
 };
 
-// 奖励等级配置 - 更新为新的积分区间
+// 奖励等级配置
 const REWARD_LEVELS = [
     { min: 0, max: 299, name: '参与奖', value: '1元兑换码' },
     { min: 300, max: 699, name: '铜质奖励', value: '5元兑换码' },
@@ -37,6 +38,9 @@ const JSONBIN_CONFIG = {
     apiUrl: 'https://api.jsonbin.io/v3/b/'
 };
 
+// IP获取服务配置
+const IP_SERVICE = 'https://api.ipify.org?format=json';
+
 // 游戏状态
 let gameState = {
     isPlaying: false,
@@ -48,7 +52,10 @@ let gameState = {
     blackHoles: [],
     particles: [],
     animationId: null,
-    timerId: null
+    timerId: null,
+    playerIP: null,
+    todayPlays: 0,
+    canPlay: true
 };
 
 // 获取DOM元素
@@ -67,6 +74,111 @@ const noStock = document.getElementById('noStock');
 const startBtn = document.getElementById('startBtn');
 const playAgainBtn = document.getElementById('playAgainBtn');
 const copyBtn = document.getElementById('copyBtn');
+
+// 获取玩家IP
+async function getPlayerIP() {
+    try {
+        const response = await fetch(IP_SERVICE);
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        console.error('Failed to get IP:', error);
+        // 如果获取IP失败，使用本地存储的唯一标识
+        let localId = localStorage.getItem('playerLocalId');
+        if (!localId) {
+            localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('playerLocalId', localId);
+        }
+        return localId;
+    }
+}
+
+// 获取今日游戏次数
+function getTodayPlays(ip) {
+    const today = new Date().toDateString();
+    const storageKey = `plays_${ip}_${today}`;
+    const plays = localStorage.getItem(storageKey);
+    return plays ? parseInt(plays) : 0;
+}
+
+// 增加游戏次数
+function incrementPlays(ip) {
+    const today = new Date().toDateString();
+    const storageKey = `plays_${ip}_${today}`;
+    const currentPlays = getTodayPlays(ip);
+    localStorage.setItem(storageKey, currentPlays + 1);
+    return currentPlays + 1;
+}
+
+// 清理过期的游戏记录
+function cleanOldPlayRecords() {
+    const today = new Date().toDateString();
+    const keysToRemove = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('plays_') && !key.includes(today)) {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+}
+
+// 检查是否可以玩游戏
+async function checkCanPlay() {
+    // 获取IP
+    if (!gameState.playerIP) {
+        gameState.playerIP = await getPlayerIP();
+    }
+    
+    // 清理旧记录
+    cleanOldPlayRecords();
+    
+    // 获取今日游戏次数
+    gameState.todayPlays = getTodayPlays(gameState.playerIP);
+    gameState.canPlay = gameState.todayPlays < GAME_CONFIG.dailyPlayLimit;
+    
+    // 更新UI显示
+    updatePlayLimitUI();
+    
+    return gameState.canPlay;
+}
+
+// 更新游戏次数限制UI
+function updatePlayLimitUI() {
+    const remainingPlays = GAME_CONFIG.dailyPlayLimit - gameState.todayPlays;
+    
+    // 在开始界面添加提示
+    let limitInfo = document.getElementById('playLimitInfo');
+    if (!limitInfo) {
+        limitInfo = document.createElement('div');
+        limitInfo.id = 'playLimitInfo';
+        limitInfo.className = 'play-limit-info';
+        const mainPanel = document.querySelector('.main-panel');
+        mainPanel.insertBefore(limitInfo, startBtn);
+    }
+    
+    if (remainingPlays > 0) {
+        limitInfo.innerHTML = `
+            <div class="limit-display">
+                今日剩余次数：<span class="remaining-count">${remainingPlays}</span> / ${GAME_CONFIG.dailyPlayLimit}
+            </div>
+        `;
+        startBtn.disabled = false;
+        startBtn.style.opacity = '1';
+    } else {
+        limitInfo.innerHTML = `
+            <div class="limit-display exceeded">
+                今日游戏次数已用完
+                <div class="reset-time">明日0点重置</div>
+            </div>
+        `;
+        startBtn.disabled = true;
+        startBtn.style.opacity = '0.5';
+        startBtn.style.cursor = 'not-allowed';
+    }
+}
 
 // 初始化画布
 function initCanvas() {
@@ -89,7 +201,7 @@ class Stardust {
         const rand = Math.random();
         if (rand < 0.1) {
             this.type = 'rainbow';
-            this.color = null; // 彩虹色将在绘制时处理
+            this.color = null;
         } else if (rand < 0.4) {
             this.type = 'green';
             this.color = '#00ff00';
@@ -110,7 +222,6 @@ class Stardust {
         ctx.rotate(this.rotation);
         
         if (this.type === 'rainbow') {
-            // 绘制彩虹星尘
             const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, GAME_CONFIG.stardustSize);
             const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
             colors.forEach((color, i) => {
@@ -123,7 +234,6 @@ class Stardust {
             ctx.shadowColor = this.color;
         }
         
-        // 绘制星形
         drawStar(0, 0, GAME_CONFIG.stardustSize / 2, GAME_CONFIG.stardustSize / 4, 5);
         
         ctx.restore();
@@ -144,10 +254,11 @@ class BlackHole {
     constructor() {
         this.x = Math.random() * GAME_CONFIG.canvasWidth;
         this.y = -GAME_CONFIG.blackHoleSize;
-        this.speed = GAME_CONFIG.blackHoleSpeed;
+        this.speed = GAME_CONFIG.blackHoleSpeed + Math.random() * 2; // 速度也有随机性
         this.rotation = 0;
         this.rotationSpeed = 0.05;
         this.pulsePhase = Math.random() * Math.PI * 2;
+        this.size = GAME_CONFIG.blackHoleSize + Math.random() * 20 - 10; // 大小有变化
     }
     
     update() {
@@ -161,10 +272,8 @@ class BlackHole {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
         
-        // 绘制黑洞
-        const pulseSize = GAME_CONFIG.blackHoleSize * (1 + Math.sin(this.pulsePhase) * 0.1);
+        const pulseSize = this.size * (1 + Math.sin(this.pulsePhase) * 0.1);
         
-        // 外圈光晕
         const gradient = ctx.createRadialGradient(0, 0, pulseSize * 0.3, 0, 0, pulseSize);
         gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
         gradient.addColorStop(0.5, 'rgba(75, 0, 130, 0.8)');
@@ -175,13 +284,11 @@ class BlackHole {
         ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
         ctx.fill();
         
-        // 中心黑洞
         ctx.fillStyle = '#000000';
         ctx.beginPath();
         ctx.arc(0, 0, pulseSize * 0.3, 0, Math.PI * 2);
         ctx.fill();
         
-        // 添加旋转的吸积盘效果
         ctx.strokeStyle = 'rgba(128, 0, 255, 0.5)';
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
@@ -194,12 +301,12 @@ class BlackHole {
     }
     
     isOffScreen() {
-        return this.y > GAME_CONFIG.canvasHeight + GAME_CONFIG.blackHoleSize;
+        return this.y > GAME_CONFIG.canvasHeight + this.size;
     }
     
     checkCollision(x, y) {
         const distance = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
-        return distance < GAME_CONFIG.blackHoleSize * 0.7 + GAME_CONFIG.shipSize / 2;
+        return distance < this.size * 0.7 + GAME_CONFIG.shipSize / 2;
     }
 }
 
@@ -267,7 +374,6 @@ function drawShip(x, y) {
     ctx.save();
     ctx.translate(x, y);
     
-    // 飞船主体
     const gradient = ctx.createLinearGradient(-GAME_CONFIG.shipSize/2, 0, GAME_CONFIG.shipSize/2, 0);
     gradient.addColorStop(0, '#00ffff');
     gradient.addColorStop(0.5, '#ffffff');
@@ -277,7 +383,6 @@ function drawShip(x, y) {
     ctx.shadowBlur = 20;
     ctx.shadowColor = '#00ffff';
     
-    // 绘制三角形飞船
     ctx.beginPath();
     ctx.moveTo(0, -GAME_CONFIG.shipSize/2);
     ctx.lineTo(-GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/2);
@@ -285,7 +390,6 @@ function drawShip(x, y) {
     ctx.closePath();
     ctx.fill();
     
-    // 引擎光效
     const engineGlow = ctx.createRadialGradient(0, GAME_CONFIG.shipSize/2, 0, 0, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/3);
     engineGlow.addColorStop(0, 'rgba(255, 100, 0, 0.8)');
     engineGlow.addColorStop(1, 'rgba(255, 200, 0, 0)');
@@ -334,7 +438,6 @@ function playBlackHoleSound() {
 function gameLoop() {
     if (!gameState.isPlaying) return;
     
-    // 清空画布
     ctx.clearRect(0, 0, GAME_CONFIG.canvasWidth, GAME_CONFIG.canvasHeight);
     
     // 生成新的星尘
@@ -342,8 +445,13 @@ function gameLoop() {
         gameState.stardusts.push(new Stardust());
     }
     
-    // 生成黑洞
+    // 生成黑洞（增加了生成率）
     if (Math.random() < GAME_CONFIG.blackHoleSpawnRate) {
+        gameState.blackHoles.push(new BlackHole());
+    }
+    
+    // 随着时间增加难度（10秒后增加黑洞生成）
+    if (gameState.timeLeft < 20 && Math.random() < 0.005) {
         gameState.blackHoles.push(new BlackHole());
     }
     
@@ -351,9 +459,7 @@ function gameLoop() {
     gameState.stardusts = gameState.stardusts.filter(stardust => {
         stardust.update();
         
-        // 检查碰撞
         if (stardust.checkCollision(gameState.shipX, gameState.shipY)) {
-            // 计算得分
             let points = 0;
             let particleColor = stardust.color;
             
@@ -372,14 +478,10 @@ function gameLoop() {
             
             gameState.score += points;
             updateScore();
-            
-            // 播放对应类型的音效
             playCollectSound(stardust.type);
-            
-            // 创建粒子效果
             createParticleExplosion(stardust.x, stardust.y, particleColor, 15);
             
-            return false; // 移除已收集的星尘
+            return false;
         }
         
         if (stardust.isOffScreen()) {
@@ -394,16 +496,11 @@ function gameLoop() {
     gameState.blackHoles = gameState.blackHoles.filter(blackHole => {
         blackHole.update();
         
-        // 检查碰撞
         if (blackHole.checkCollision(gameState.shipX, gameState.shipY)) {
             gameState.score += SCORE_CONFIG.blackHole;
             if (gameState.score < 0) gameState.score = 0;
             updateScore();
-            
-            // 播放黑洞音效
             playBlackHoleSound();
-            
-            // 创建粒子效果
             createParticleExplosion(blackHole.x, blackHole.y, '#4a0080', 30);
             
             return false;
@@ -427,17 +524,14 @@ function gameLoop() {
         return true;
     });
     
-    // 绘制飞船
     drawShip(gameState.shipX, gameState.shipY);
     
-    // 继续动画循环
     gameState.animationId = requestAnimationFrame(gameLoop);
 }
 
 // 更新分数显示
 function updateScore() {
     scoreDisplay.textContent = gameState.score;
-    // 添加动画效果
     scoreDisplay.style.transform = 'scale(1.2)';
     setTimeout(() => {
         scoreDisplay.style.transform = 'scale(1)';
@@ -452,7 +546,6 @@ function updateTimer() {
     if (gameState.timeLeft <= 10) {
         timerDisplay.style.color = '#ff6b6b';
         
-        // 播放警告音
         if (gameState.timeLeft <= 5 && window.GameSounds) {
             window.GameSounds.playWarningSound();
         }
@@ -464,9 +557,20 @@ function updateTimer() {
 }
 
 // 开始游戏
-function startGame() {
+async function startGame() {
+    // 检查是否可以玩
+    const canPlay = await checkCanPlay();
+    if (!canPlay) {
+        alert('今日游戏次数已用完，请明日再来！');
+        return;
+    }
+    
+    // 增加游戏次数
+    gameState.todayPlays = incrementPlays(gameState.playerIP);
+    
     // 重置游戏状态
     gameState = {
+        ...gameState, // 保留IP和游戏次数信息
         isPlaying: true,
         score: 0,
         timeLeft: GAME_CONFIG.duration,
@@ -479,19 +583,14 @@ function startGame() {
         timerId: null
     };
     
-    // 更新UI
     updateScore();
     timerDisplay.textContent = gameState.timeLeft;
     timerDisplay.style.color = 'white';
     
-    // 隐藏开始界面
     startScreen.style.display = 'none';
     endScreen.style.display = 'none';
     
-    // 开始计时器
     gameState.timerId = setInterval(updateTimer, 1000);
-    
-    // 开始游戏循环
     gameLoop();
 }
 
@@ -499,7 +598,6 @@ function startGame() {
 async function endGame() {
     gameState.isPlaying = false;
     
-    // 停止动画和计时器
     if (gameState.animationId) {
         cancelAnimationFrame(gameState.animationId);
     }
@@ -507,11 +605,9 @@ async function endGame() {
         clearInterval(gameState.timerId);
     }
     
-    // 播放游戏结束音效
     if (window.GameSounds) {
         window.GameSounds.playGameOverSound();
         
-        // 如果得分很高，播放成功音效
         if (gameState.score >= 1000) {
             setTimeout(() => {
                 window.GameSounds.playSuccessSound();
@@ -519,16 +615,13 @@ async function endGame() {
         }
     }
     
-    // 显示最终得分
     finalScoreDisplay.textContent = gameState.score;
     
-    // 确定奖励等级
     const level = REWARD_LEVELS.find(l => gameState.score >= l.min && gameState.score <= l.max);
     
     if (level) {
         rewardLevel.textContent = `🏆 ${level.name}`;
         
-        // 获取兑换码
         const code = await getRedeemCode(level);
         
         if (code) {
@@ -541,10 +634,29 @@ async function endGame() {
         }
     }
     
-    // 显示结束界面
+    // 更新剩余次数显示
+    const remainingPlays = GAME_CONFIG.dailyPlayLimit - gameState.todayPlays;
+    let playAgainText = document.getElementById('playAgainText');
+    if (!playAgainText) {
+        playAgainText = document.createElement('div');
+        playAgainText.id = 'playAgainText';
+        playAgainText.className = 'play-again-text';
+        playAgainBtn.parentNode.insertBefore(playAgainText, playAgainBtn);
+    }
+    
+    if (remainingPlays > 0) {
+        playAgainText.innerHTML = `剩余次数：${remainingPlays}`;
+        playAgainBtn.disabled = false;
+        playAgainBtn.style.opacity = '1';
+    } else {
+        playAgainText.innerHTML = `今日次数已用完`;
+        playAgainBtn.disabled = true;
+        playAgainBtn.style.opacity = '0.5';
+        playAgainBtn.style.cursor = 'not-allowed';
+    }
+    
     endScreen.style.display = 'flex';
     
-    // 创建庆祝粒子效果
     if (gameState.score >= 1000) {
         createCelebration();
     }
@@ -553,7 +665,6 @@ async function endGame() {
 // 获取兑换码
 async function getRedeemCode(level) {
     try {
-        // 从JSONBin获取兑换码列表
         const response = await fetch(`${JSONBIN_CONFIG.apiUrl}${JSONBIN_CONFIG.binId}/latest`, {
             headers: {
                 'X-Master-Key': JSONBIN_CONFIG.apiKey
@@ -568,7 +679,6 @@ async function getRedeemCode(level) {
         const data = await response.json();
         const codes = data.record.codes || [];
         
-        // 查找对应等级的未使用兑换码
         const availableCode = codes.find(code => 
             code.level === level.name && !code.used
         );
@@ -577,11 +687,9 @@ async function getRedeemCode(level) {
             return null;
         }
         
-        // 标记为已使用
         availableCode.used = true;
         availableCode.usedAt = new Date().toISOString();
         
-        // 更新JSONBin
         await fetch(`${JSONBIN_CONFIG.apiUrl}${JSONBIN_CONFIG.binId}`, {
             method: 'PUT',
             headers: {
@@ -660,7 +768,6 @@ function handleResize() {
 
 // 初始化事件监听
 function initEventListeners() {
-    // 按钮事件 - 添加音效
     startBtn.addEventListener('click', () => {
         if (window.GameSounds) {
             window.GameSounds.playClickSound();
@@ -682,24 +789,23 @@ function initEventListeners() {
         copyCode();
     });
     
-    // 鼠标和触摸事件
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
     
-    // 窗口大小改变
     window.addEventListener('resize', handleResize);
     
-    // 禁用右键菜单
     document.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 // 初始化游戏
-function init() {
+async function init() {
     initCanvas();
     initEventListeners();
     
-    // 初始化音效系统
+    // 检查游戏次数
+    await checkCanPlay();
+    
     if (!window.GameSounds) {
         const script = document.createElement('script');
         script.src = 'js/sounds.js';
