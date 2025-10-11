@@ -6,6 +6,9 @@ const JSONBIN_CONFIG = {
     apiUrl: 'https://api.jsonbin.io/v3/b/'
 };
 
+// 奖励等级列表
+const REWARD_CATEGORIES = ['参与奖', '铜质奖励', '银质奖励', '金质奖励', '星钻奖励'];
+
 // 全局变量
 let codesData = [];
 let isLoggedIn = false;
@@ -76,6 +79,7 @@ async function loadCodes() {
         codesData = data.record.codes || [];
         
         updateStats();
+        updateCategoryStats();
         renderCodes();
         
     } catch (error) {
@@ -83,6 +87,7 @@ async function loadCodes() {
         alert('加载兑换码失败，请检查网络连接');
         codesData = [];
         updateStats();
+        updateCategoryStats();
         renderCodes();
     }
 }
@@ -111,7 +116,7 @@ async function saveCodes() {
     }
 }
 
-// 更新统计信息
+// 更新总体统计信息
 function updateStats() {
     const total = codesData.length;
     const used = codesData.filter(code => code.used).length;
@@ -120,6 +125,32 @@ function updateStats() {
     totalCodesDisplay.textContent = total;
     usedCodesDisplay.textContent = used;
     unusedCodesDisplay.textContent = unused;
+}
+
+// 更新分类统计信息
+function updateCategoryStats() {
+    REWARD_CATEGORIES.forEach(category => {
+        const categoryData = codesData.filter(code => code.level === category);
+        const total = categoryData.length;
+        const used = categoryData.filter(code => code.used).length;
+        const available = total - used;
+        
+        // 更新显示
+        const totalElement = document.getElementById(`total-${category}`);
+        const usedElement = document.getElementById(`used-${category}`);
+        const availableElement = document.getElementById(`available-${category}`);
+        const progressElement = document.getElementById(`progress-${category}`);
+        
+        if (totalElement) totalElement.textContent = total;
+        if (usedElement) usedElement.textContent = used;
+        if (availableElement) availableElement.textContent = available;
+        
+        // 更新进度条
+        if (progressElement) {
+            const percentage = total > 0 ? (used / total) * 100 : 0;
+            progressElement.style.width = `${percentage}%`;
+        }
+    });
 }
 
 // 渲染兑换码列表
@@ -229,6 +260,7 @@ async function addCode() {
     
     if (saved) {
         updateStats();
+        updateCategoryStats();
         renderCodes();
         hideAddCodeForm();
         alert('兑换码添加成功');
@@ -255,6 +287,7 @@ async function deleteCode(id) {
     
     if (saved) {
         updateStats();
+        updateCategoryStats();
         renderCodes();
         alert('兑换码已删除');
     } else {
@@ -287,6 +320,7 @@ async function deleteUsedCodes() {
     
     if (saved) {
         updateStats();
+        updateCategoryStats();
         renderCodes();
         alert(`成功删除 ${usedCount} 个已使用的兑换码`);
     } else {
@@ -322,6 +356,7 @@ async function clearAllCodes() {
     
     if (saved) {
         updateStats();
+        updateCategoryStats();
         renderCodes();
         alert('所有兑换码已清空');
     } else {
