@@ -34,7 +34,7 @@
                 </div>
                 <div class="time-display">
                     <span class="label">时间</span>
-                    <span class="value" id="timer">60</span>
+                    <span class="value" id="timer">30</span>
                 </div>
             </div>
 
@@ -44,17 +44,30 @@
                     <h1 class="neon-text">星尘收集者</h1>
                     <div class="rules">
                         <h3>游戏规则</h3>
+                        <p style="margin-bottom: 15px; color: rgba(255,255,255,0.8); font-size: 14px;">
+                            控制飞船收集星尘，30秒内获取最高分！
+                        </p>
                         <div class="rule-item">
-                            <span class="star-icon pink">★</span> 粉色星尘 = 10分
+                            <span class="star-icon pink">★</span> 粉色星尘 = 5分
                         </div>
                         <div class="rule-item">
-                            <span class="star-icon green">★</span> 绿色星尘 = 20分
+                            <span class="star-icon green">★</span> 绿色星尘 = 10分
                         </div>
                         <div class="rule-item">
-                            <span class="star-icon rainbow">★</span> 彩虹星尘 = 50分
+                            <span class="star-icon rainbow">★</span> 彩虹星尘 = 25分
                         </div>
                         <div class="rule-item">
-                            <span class="black-hole">●</span> 避开黑洞 = -30分
+                            <span class="black-hole">●</span> 碰到黑洞 = -30分
+                        </div>
+                    </div>
+                    <div class="reward-info">
+                        <h4 style="margin-bottom: 10px; color: rgba(255,255,255,0.9);">奖励等级</h4>
+                        <div style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                            <div>0-49分 → 参与奖（1元优惠券）</div>
+                            <div>50-149分 → 铜质奖励（5元兑换码）</div>
+                            <div>150-299分 → 银质奖励（10元兑换码）</div>
+                            <div>300-499分 → 金质奖励（50元兑换码）</div>
+                            <div>500分+ → 星钻奖励（100元兑换码）</div>
                         </div>
                     </div>
                     <button class="play-btn neon-btn" id="startBtn">
