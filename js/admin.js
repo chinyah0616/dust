@@ -1,8 +1,8 @@
 // 配置
 const ADMIN_PASSWORD = 'df90qh32rf9';
 const JSONBIN_CONFIG = {
-    binId: '68ea90cdae596e708f0eb402', // 替换为您的JSONBin ID
-    apiKey: '$2a$10$jm/VPb/omDLo8u4selSVL.VShILiV2Y2q5SZSDfB9yn3F5b6sgjT6', // 替换为您的API密钥
+    binId: 'YOUR_BIN_ID', // 替换为您的JSONBin ID
+    apiKey: 'YOUR_API_KEY', // 替换为您的API密钥
     apiUrl: 'https://api.jsonbin.io/v3/b/'
 };
 
@@ -12,6 +12,11 @@ const REWARD_CATEGORIES = ['参与奖', '铜质奖励', '银质奖励', '金质�
 // 全局变量
 let codesData = [];
 let isLoggedIn = false;
+let batchCodesPreview = {
+    valid: [],
+    duplicate: [],
+    invalid: []
+};
 
 // DOM元素
 const loginScreen = document.getElementById('loginScreen');
@@ -21,20 +26,32 @@ const loginBtn = document.getElementById('loginBtn');
 const loginError = document.getElementById('loginError');
 const logoutBtn = document.getElementById('logoutBtn');
 const addCodeBtn = document.getElementById('addCodeBtn');
+const batchAddBtn = document.getElementById('batchAddBtn');
 const deleteUsedBtn = document.getElementById('deleteUsedBtn');
 const clearAllBtn = document.getElementById('clearAllBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const addCodeForm = document.getElementById('addCodeForm');
+const batchAddForm = document.getElementById('batchAddForm');
 const codeInput = document.getElementById('codeInput');
 const levelSelect = document.getElementById('levelSelect');
+const batchLevelSelect = document.getElementById('batchLevelSelect');
+const batchCodesInput = document.getElementById('batchCodesInput');
 const saveCodeBtn = document.getElementById('saveCodeBtn');
+const saveBatchBtn = document.getElementById('saveBatchBtn');
 const cancelAddBtn = document.getElementById('cancelAddBtn');
+const cancelBatchBtn = document.getElementById('cancelBatchBtn');
 const filterLevel = document.getElementById('filterLevel');
 const filterStatus = document.getElementById('filterStatus');
 const codesTableBody = document.getElementById('codesTableBody');
 const totalCodesDisplay = document.getElementById('totalCodes');
 const usedCodesDisplay = document.getElementById('usedCodes');
 const unusedCodesDisplay = document.getElementById('unusedCodes');
+const codeCount = document.getElementById('codeCount');
+const batchPreview = document.getElementById('batchPreview');
+const validCount = document.getElementById('validCount');
+const duplicateCount = document.getElementById('duplicateCount');
+const invalidCount = document.getElementById('invalidCount');
+const previewList = document.getElementById('previewList');
 
 // 登录功能
 function login() {
@@ -214,14 +231,101 @@ function renderCodes() {
 // 显示添加兑换码表单
 function showAddCodeForm() {
     addCodeForm.style.display = 'block';
+    batchAddForm.style.display = 'none';
     codeInput.value = '';
     codeInput.focus();
+}
+
+// 显示批量添加表单
+function showBatchAddForm() {
+    batchAddForm.style.display = 'block';
+    addCodeForm.style.display = 'none';
+    batchCodesInput.value = '';
+    batchPreview.style.display = 'none';
+    updateBatchPreview();
 }
 
 // 隐藏添加兑换码表单
 function hideAddCodeForm() {
     addCodeForm.style.display = 'none';
     codeInput.value = '';
+}
+
+// 隐藏批量添加表单
+function hideBatchAddForm() {
+    batchAddForm.style.display = 'none';
+    batchCodesInput.value = '';
+    batchPreview.style.display = 'none';
+}
+
+// 更新批量预览
+function updateBatchPreview() {
+    const text = batchCodesInput.value.trim();
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    // 更新计数
+    codeCount.textContent = lines.length;
+    
+    if (lines.length === 0) {
+        batchPreview.style.display = 'none';
+        return;
+    }
+    
+    // 分析兑换码
+    batchCodesPreview = {
+        valid: [],
+        duplicate: [],
+        invalid: []
+    };
+    
+    const existingCodes = codesData.map(c => c.code.toUpperCase());
+    const currentBatch = [];
+    
+    lines.forEach(line => {
+        const code = line.trim();
+        
+        if (!code) {
+            return; // 跳过空行
+        }
+        
+        if (code.length < 3 || code.length > 50) {
+            batchCodesPreview.invalid.push(code);
+        } else if (existingCodes.includes(code.toUpperCase()) || currentBatch.includes(code.toUpperCase())) {
+            batchCodesPreview.duplicate.push(code);
+        } else {
+            batchCodesPreview.valid.push(code);
+            currentBatch.push(code.toUpperCase());
+        }
+    });
+    
+    // 显示预览
+    if (lines.length > 0) {
+        batchPreview.style.display = 'block';
+        validCount.textContent = batchCodesPreview.valid.length;
+        duplicateCount.textContent = batchCodesPreview.duplicate.length;
+        invalidCount.textContent = batchCodesPreview.invalid.length;
+        
+        // 生成预览列表
+        let previewHTML = '';
+        
+        batchCodesPreview.valid.slice(0, 10).forEach(code => {
+            previewHTML += `<div class="preview-item valid">✓ ${code}</div>`;
+        });
+        
+        if (batchCodesPreview.valid.length > 10) {
+            previewHTML += `<div class="preview-item" style="text-align: center; color: #999;">... 还有 ${batchCodesPreview.valid.length - 10} 个有效兑换码</div>`;
+        }
+        
+        batchCodesPreview.duplicate.forEach(code => {
+            previewHTML += `<div class="preview-item duplicate">⚠ ${code} (重复)</div>`;
+        });
+        
+        batchCodesPreview.invalid.forEach(code => {
+            previewHTML += `<div class="preview-item invalid">✗ ${code} (无效格式)</div>`;
+        });
+        
+        previewList.innerHTML = previewHTML || '<div style="color: #999; text-align: center;">无兑换码</div>';
+    }
 }
 
 // 添加新兑换码
@@ -236,7 +340,7 @@ async function addCode() {
     }
     
     // 检查兑换码是否已存在
-    if (codesData.some(c => c.code === code)) {
+    if (codesData.some(c => c.code.toUpperCase() === code.toUpperCase())) {
         alert('该兑换码已存在');
         codeInput.focus();
         return;
@@ -267,6 +371,46 @@ async function addCode() {
     } else {
         // 如果保存失败，从数组中移除
         codesData.pop();
+    }
+}
+
+// 批量添加兑换码
+async function batchAddCodes() {
+    if (batchCodesPreview.valid.length === 0) {
+        alert('没有有效的兑换码可以添加');
+        return;
+    }
+    
+    const level = batchLevelSelect.value;
+    const newCodes = [];
+    
+    // 创建新兑换码对象
+    batchCodesPreview.valid.forEach(code => {
+        newCodes.push({
+            id: generateId(),
+            code: code,
+            level: level,
+            used: false,
+            createdAt: new Date().toISOString(),
+            usedAt: null
+        });
+    });
+    
+    // 添加到数组
+    codesData.push(...newCodes);
+    
+    // 保存到JSONBin
+    const saved = await saveCodes();
+    
+    if (saved) {
+        updateStats();
+        updateCategoryStats();
+        renderCodes();
+        hideBatchAddForm();
+        alert(`成功添加 ${newCodes.length} 个兑换码`);
+    } else {
+        // 如果保存失败，从数组中移除
+        codesData.splice(codesData.length - newCodes.length, newCodes.length);
     }
 }
 
@@ -394,11 +538,17 @@ function initEventListeners() {
     
     // 兑换码操作
     addCodeBtn.addEventListener('click', showAddCodeForm);
+    batchAddBtn.addEventListener('click', showBatchAddForm);
     saveCodeBtn.addEventListener('click', addCode);
+    saveBatchBtn.addEventListener('click', batchAddCodes);
     cancelAddBtn.addEventListener('click', hideAddCodeForm);
+    cancelBatchBtn.addEventListener('click', hideBatchAddForm);
     deleteUsedBtn.addEventListener('click', deleteUsedCodes);
     clearAllBtn.addEventListener('click', clearAllCodes);
     refreshBtn.addEventListener('click', refreshList);
+    
+    // 批量输入实时预览
+    batchCodesInput.addEventListener('input', updateBatchPreview);
     
     // 过滤器
     filterLevel.addEventListener('change', renderCodes);
