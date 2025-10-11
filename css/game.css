@@ -340,6 +340,46 @@ body {
     color: rgba(255, 255, 255, 0.9);
 }
 
+/* 游戏次数限制显示 */
+.play-limit-info {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.limit-display {
+    font-size: 16px;
+    color: #00ffff;
+    text-align: center;
+    font-weight: bold;
+}
+
+.limit-display.exceeded {
+    color: #ff6b6b;
+}
+
+.remaining-count {
+    font-size: 24px;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin: 0 5px;
+}
+
+.reset-time {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 10px;
+}
+
+.play-again-text {
+    margin: 10px 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+}
+
 /* 霓虹按钮 */
 .neon-btn {
     position: relative;
@@ -352,20 +392,26 @@ body {
     border-radius: 50px;
     cursor: pointer;
     overflow: hidden;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 2px;
     margin: 20px 10px 10px;
     box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
 }
 
-.neon-btn:hover {
+.neon-btn:hover:not(:disabled) {
     transform: scale(1.05);
     box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
 }
 
-.neon-btn:active {
+.neon-btn:active:not(:disabled) {
     transform: scale(0.95);
+}
+
+.neon-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background: linear-gradient(45deg, #666, #999);
 }
 
 .btn-glow {
@@ -379,7 +425,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-.neon-btn:hover .btn-glow {
+.neon-btn:hover:not(:disabled) .btn-glow {
     opacity: 1;
     animation: pulse 1s ease-in-out infinite;
 }
@@ -547,6 +593,10 @@ body {
     .reward-info {
         padding: 10px;
     }
+    
+    .play-limit-info {
+        padding: 10px;
+    }
 }
 
 /* 响应式设计 - 手机竖屏 */
@@ -601,6 +651,18 @@ body {
     .rules h3 {
         font-size: 18px;
     }
+    
+    .play-limit-info {
+        padding: 12px;
+    }
+    
+    .limit-display {
+        font-size: 14px;
+    }
+    
+    .remaining-count {
+        font-size: 20px;
+    }
 }
 
 /* 响应式设计 - 小手机 */
@@ -642,6 +704,19 @@ body {
     .score-display .value, .time-display .value {
         font-size: 20px;
     }
+    
+    .play-limit-info {
+        margin: 15px 0;
+        padding: 10px;
+    }
+    
+    .limit-display {
+        font-size: 13px;
+    }
+    
+    .remaining-count {
+        font-size: 18px;
+    }
 }
 
 /* 超小屏幕优化 */
@@ -666,6 +741,18 @@ body {
     .reward-info div {
         font-size: 11px !important;
     }
+    
+    .play-limit-info {
+        padding: 8px;
+    }
+    
+    .limit-display {
+        font-size: 12px;
+    }
+    
+    .remaining-count {
+        font-size: 16px;
+    }
 }
 
 /* 高分辨率屏幕优化 */
@@ -686,10 +773,16 @@ body {
     .star-icon {
         font-size: 28px;
     }
+    
+    .play-limit-info {
+        padding: 20px;
+    }
+    
+    .limit-display {
+        font-size: 18px;
+    }
+    
+    .remaining-count {
+        font-size: 28px;
+    }
 }
-/* 游戏次数限制显示 */
-.play-limit-info {
-    margin: 20px 0;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-
