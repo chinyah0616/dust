@@ -14,8 +14,7 @@ let codesData = [];
 let isLoggedIn = false;
 let batchCodesPreview = {
     valid: [],
-    duplicate: [],
-    invalid: []
+    duplicate: []
 };
 
 // DOM元素
@@ -49,8 +48,6 @@ const unusedCodesDisplay = document.getElementById('unusedCodes');
 const codeCount = document.getElementById('codeCount');
 const batchPreview = document.getElementById('batchPreview');
 const validCount = document.getElementById('validCount');
-const duplicateCount = document.getElementById('duplicateCount');
-const invalidCount = document.getElementById('invalidCount');
 const previewList = document.getElementById('previewList');
 
 // 登录功能
@@ -274,8 +271,7 @@ function updateBatchPreview() {
     // 分析兑换码
     batchCodesPreview = {
         valid: [],
-        duplicate: [],
-        invalid: []
+        duplicate: []
     };
     
     const existingCodes = codesData.map(c => c.code.toUpperCase());
@@ -288,9 +284,7 @@ function updateBatchPreview() {
             return; // 跳过空行
         }
         
-        if (code.length < 3 || code.length > 50) {
-            batchCodesPreview.invalid.push(code);
-        } else if (existingCodes.includes(code.toUpperCase()) || currentBatch.includes(code.toUpperCase())) {
+        if (existingCodes.includes(code.toUpperCase()) || currentBatch.includes(code.toUpperCase())) {
             batchCodesPreview.duplicate.push(code);
         } else {
             batchCodesPreview.valid.push(code);
@@ -302,8 +296,6 @@ function updateBatchPreview() {
     if (lines.length > 0) {
         batchPreview.style.display = 'block';
         validCount.textContent = batchCodesPreview.valid.length;
-        duplicateCount.textContent = batchCodesPreview.duplicate.length;
-        invalidCount.textContent = batchCodesPreview.invalid.length;
         
         // 生成预览列表
         let previewHTML = '';
@@ -313,15 +305,11 @@ function updateBatchPreview() {
         });
         
         if (batchCodesPreview.valid.length > 10) {
-            previewHTML += `<div class="preview-item" style="text-align: center; color: #999;">... 还有 ${batchCodesPreview.valid.length - 10} 个有效兑换码</div>`;
+            previewHTML += `<div class="preview-item" style="text-align: center; color: #999;">... 还有 ${batchCodesPreview.valid.length - 10} 个兑换码</div>`;
         }
         
         batchCodesPreview.duplicate.forEach(code => {
-            previewHTML += `<div class="preview-item duplicate">⚠ ${code} (重复)</div>`;
-        });
-        
-        batchCodesPreview.invalid.forEach(code => {
-            previewHTML += `<div class="preview-item invalid">✗ ${code} (无效格式)</div>`;
+            previewHTML += `<div class="preview-item duplicate">⚠ ${code} (已存在，将跳过)</div>`;
         });
         
         previewList.innerHTML = previewHTML || '<div style="color: #999; text-align: center;">无兑换码</div>';
@@ -377,7 +365,7 @@ async function addCode() {
 // 批量添加兑换码
 async function batchAddCodes() {
     if (batchCodesPreview.valid.length === 0) {
-        alert('没有有效的兑换码可以添加');
+        alert('没有可以添加的兑换码（所有兑换码都已存在）');
         return;
     }
     
@@ -407,7 +395,12 @@ async function batchAddCodes() {
         updateCategoryStats();
         renderCodes();
         hideBatchAddForm();
-        alert(`成功添加 ${newCodes.length} 个兑换码`);
+        
+        let message = `成功添加 ${newCodes.length} 个兑换码`;
+        if (batchCodesPreview.duplicate.length > 0) {
+            message += `\n跳过 ${batchCodesPreview.duplicate.length} 个重复兑换码`;
+        }
+        alert(message);
     } else {
         // 如果保存失败，从数组中移除
         codesData.splice(codesData.length - newCodes.length, newCodes.length);
