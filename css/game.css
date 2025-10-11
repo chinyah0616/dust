@@ -149,6 +149,7 @@ body {
     font-size: 28px;
     font-weight: bold;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transition: transform 0.2s ease;
 }
 
 /* 屏幕覆盖层 */
@@ -171,8 +172,33 @@ body {
     text-align: center;
     color: white;
     max-width: 90%;
-    width: 500px;
+    width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
     animation: slideIn 0.5s ease-out;
+}
+
+/* 美化滚动条 */
+.main-panel::-webkit-scrollbar,
+.result-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main-panel::-webkit-scrollbar-track,
+.result-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.main-panel::-webkit-scrollbar-thumb,
+.result-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.main-panel::-webkit-scrollbar-thumb:hover,
+.result-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 @keyframes slideIn {
@@ -216,6 +242,13 @@ body {
 .rules h3 {
     margin-bottom: 20px;
     color: rgba(255, 255, 255, 0.9);
+    font-size: 20px;
+}
+
+.rules p {
+    margin-bottom: 15px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
 }
 
 .rule-item {
@@ -225,6 +258,11 @@ body {
     gap: 10px;
     margin: 10px 0;
     font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.rule-item:hover {
+    transform: translateX(5px);
 }
 
 .star-icon {
@@ -232,13 +270,32 @@ body {
     filter: drop-shadow(0 0 5px currentColor);
 }
 
-.star-icon.pink { color: #ff69b4; }
-.star-icon.green { color: #00ff00; }
+.star-icon.pink { 
+    color: #ff69b4; 
+    animation: twinkle 2s ease-in-out infinite;
+}
+
+.star-icon.green { 
+    color: #00ff00;
+    animation: twinkle 2s ease-in-out infinite 0.5s;
+}
+
 .star-icon.rainbow {
     background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    animation: rainbowShift 3s linear infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes rainbowShift {
+    0% { filter: hue-rotate(0deg) drop-shadow(0 0 5px currentColor); }
+    100% { filter: hue-rotate(360deg) drop-shadow(0 0 5px currentColor); }
 }
 
 .black-hole {
@@ -247,6 +304,40 @@ body {
     background: radial-gradient(circle, #000000 30%, #4a0080 70%);
     border-radius: 50%;
     display: inline-block;
+    box-shadow: 0 0 10px #4a0080;
+    animation: blackHolePulse 2s ease-in-out infinite;
+}
+
+@keyframes blackHolePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* 奖励信息 */
+.reward-info {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reward-info h4 {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin-bottom: 10px;
+}
+
+.reward-info div {
+    transition: all 0.3s ease;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+}
+
+.reward-info div:hover {
+    transform: translateX(5px);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* 霓虹按钮 */
@@ -264,11 +355,13 @@ body {
     transition: transform 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin: 10px;
+    margin: 20px 10px 10px;
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
 }
 
 .neon-btn:hover {
     transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
 }
 
 .neon-btn:active {
@@ -316,6 +409,12 @@ body {
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    animation: scoreGlow 2s ease-in-out infinite;
+}
+
+@keyframes scoreGlow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 /* 奖励部分 */
@@ -331,6 +430,7 @@ body {
     font-weight: bold;
     margin-bottom: 20px;
     color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .reward-code label {
@@ -366,11 +466,12 @@ body {
     color: white;
     font-weight: bold;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .copy-btn:hover {
     transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 255, 0, 0.3);
 }
 
 .copy-btn:active {
@@ -381,6 +482,10 @@ body {
     padding: 20px;
     font-size: 20px;
     color: #ff6b6b;
+}
+
+.no-stock p {
+    margin: 5px 0;
 }
 
 /* 粒子效果容器 */
@@ -411,7 +516,40 @@ body {
     }
 }
 
-/* 响应式设计 */
+/* 响应式设计 - 平板 */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .main-panel, .result-panel {
+        width: 700px;
+        padding: 35px;
+    }
+    
+    .neon-text {
+        font-size: 42px;
+    }
+}
+
+/* 响应式设计 - 手机横屏 */
+@media (max-width: 768px) and (orientation: landscape) {
+    .main-panel, .result-panel {
+        padding: 20px;
+        max-height: 85vh;
+    }
+    
+    .neon-text {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+    
+    .rules {
+        padding: 15px;
+    }
+    
+    .reward-info {
+        padding: 10px;
+    }
+}
+
+/* 响应式设计 - 手机竖屏 */
 @media (max-width: 768px) {
     .neon-text {
         font-size: 36px;
@@ -442,38 +580,110 @@ body {
     .code-display input {
         width: 100%;
     }
-}
-
-@media (max-width: 480px) {
-    .neon-text {
-        font-size: 28px;
+    
+    .reward-info {
+        padding: 12px;
+    }
+    
+    .reward-info div {
+        font-size: 12px !important;
+        line-height: 1.5 !important;
     }
     
     .rule-item {
         font-size: 16px;
     }
     
+    .rules {
+        padding: 15px;
+    }
+    
+    .rules h3 {
+        font-size: 18px;
+    }
+}
+
+/* 响应式设计 - 小手机 */
+@media (max-width: 480px) {
+    .neon-text {
+        font-size: 28px;
+    }
+    
+    .rule-item {
+        font-size: 14px;
+    }
+    
+    .star-icon {
+        font-size: 20px;
+    }
+    
     .neon-btn {
         padding: 12px 30px;
         font-size: 16px;
     }
-}
-
-/* 平板优化 */
-@media (min-width: 768px) and (max-width: 1024px) {
-    .main-panel, .result-panel {
-        width: 600px;
+    
+    .score-value {
+        font-size: 48px;
+    }
+    
+    .reward-level {
+        font-size: 20px;
+    }
+    
+    .top-bar {
+        padding: 8px 15px;
+        gap: 15px;
+    }
+    
+    .score-display .label, .time-display .label {
+        font-size: 12px;
+    }
+    
+    .score-display .value, .time-display .value {
+        font-size: 20px;
     }
 }
 
-/* 桌面优化 */
-@media (min-width: 1024px) {
+/* 超小屏幕优化 */
+@media (max-width: 360px) {
     .main-panel, .result-panel {
-        width: 600px;
+        padding: 20px 15px;
+    }
+    
+    .neon-text {
+        font-size: 24px;
+    }
+    
+    .rules {
+        padding: 12px;
+    }
+    
+    .reward-info {
+        padding: 10px;
+        font-size: 11px;
+    }
+    
+    .reward-info div {
+        font-size: 11px !important;
+    }
+}
+
+/* 高分辨率屏幕优化 */
+@media (min-width: 1920px) {
+    .main-panel, .result-panel {
+        width: 800px;
         padding: 50px;
     }
     
     .neon-text {
         font-size: 56px;
+    }
+    
+    .rule-item {
+        font-size: 20px;
+    }
+    
+    .star-icon {
+        font-size: 28px;
     }
 }
