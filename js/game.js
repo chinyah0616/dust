@@ -32,8 +32,8 @@ const REWARD_LEVELS = [
 
 // JSONBin配置
 const JSONBIN_CONFIG = {
-    binId: 'YOUR_BIN_ID', // 替换为您的JSONBin ID
-    apiKey: 'YOUR_API_KEY', // 替换为您的API密钥
+    binId: '68ea90cdae596e708f0eb402', // 替换为您的JSONBin ID
+    apiKey: '$2a$10$jm/VPb/omDLo8u4selSVL.VShILiV2Y2q5SZSDfB9yn3F5b6sgjT6', // 替换为您的API密钥
     apiUrl: 'https://api.jsonbin.io/v3/b/'
 };
 
