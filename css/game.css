@@ -1,3 +1,345 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    background: #000;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* 防调试警告 */
+#debugger-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #ff0000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    font-size: 24px;
+}
+
+/* 游戏容器 */
+#game-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 星空背景 */
+.starfield {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #0a0e27 0%, #1a1e3a 50%, #2a2e4a 100%);
+}
+
+.stars {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(2px 2px at 20% 30%, white, transparent),
+        radial-gradient(2px 2px at 60% 70%, white, transparent),
+        radial-gradient(1px 1px at 50% 50%, white, transparent),
+        radial-gradient(1px 1px at 80% 10%, white, transparent);
+    background-size: 200% 200%;
+    animation: starsMove 120s linear infinite;
+}
+
+@keyframes starsMove {
+    from { transform: translateY(0); }
+    to { transform: translateY(-100%); }
+}
+
+.nebula {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(ellipse at top, rgba(123, 67, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(255, 67, 123, 0.1) 0%, transparent 50%);
+    animation: nebulaPulse 10s ease-in-out infinite;
+}
+
+@keyframes nebulaPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+/* 游戏画布 */
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: none;
+}
+
+/* UI层 */
+.game-ui {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.game-ui > * {
+    pointer-events: auto;
+}
+
+/* 玻璃态面板 */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 顶部信息栏 */
+.top-bar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 30px;
+    padding: 15px 30px;
+    pointer-events: none;
+}
+
+.score-display, .time-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+}
+
+.score-display .label, .time-display .label {
+    font-size: 14px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.score-display .value, .time-display .value {
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transition: transform 0.2s ease;
+}
+
+/* 屏幕覆盖层 */
+.screen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+}
+
+/* 主面板 */
+.main-panel, .result-panel {
+    padding: 40px;
+    text-align: center;
+    color: white;
+    max-width: 90%;
+    width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideIn 0.5s ease-out;
+}
+
+/* 美化滚动条 */
+.main-panel::-webkit-scrollbar,
+.result-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.main-panel::-webkit-scrollbar-track,
+.result-panel::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.main-panel::-webkit-scrollbar-thumb,
+.result-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.main-panel::-webkit-scrollbar-thumb:hover,
+.result-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 霓虹文字 */
+.neon-text {
+    font-size: 48px;
+    font-weight: bold;
+    background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: neonGlow 3s ease-in-out infinite;
+    text-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+    margin-bottom: 30px;
+}
+
+@keyframes neonGlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+/* 规则说明 */
+.rules {
+    margin: 30px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+}
+
+.rules h3 {
+    margin-bottom: 20px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 20px;
+}
+
+.rules p {
+    margin-bottom: 15px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+}
+
+.rule-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px 0;
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.rule-item:hover {
+    transform: translateX(5px);
+}
+
+.star-icon {
+    font-size: 24px;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+.star-icon.pink { 
+    color: #ff69b4; 
+    animation: twinkle 2s ease-in-out infinite;
+}
+
+.star-icon.green { 
+    color: #00ff00;
+    animation: twinkle 2s ease-in-out infinite 0.5s;
+}
+
+.star-icon.rainbow {
+    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: rainbowShift 3s linear infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes rainbowShift {
+    0% { filter: hue-rotate(0deg) drop-shadow(0 0 5px currentColor); }
+    100% { filter: hue-rotate(360deg) drop-shadow(0 0 5px currentColor); }
+}
+
+.black-hole {
+    width: 24px;
+    height: 24px;
+    background: radial-gradient(circle, #000000 30%, #4a0080 70%);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 10px #4a0080;
+    animation: blackHolePulse 2s ease-in-out infinite;
+}
+
+@keyframes blackHolePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* 奖励信息 */
+.reward-info {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reward-info h4 {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin-bottom: 10px;
+}
+
+.reward-info div {
+    transition: all 0.3s ease;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+}
+
+.reward-info div:hover {
+    transform: translateX(5px);
+    color: rgba(255, 255, 255, 0.9);
+}
+
 /* 最高分显示 */
 .high-score-display {
     margin: 15px 0;
@@ -21,9 +363,35 @@
     text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
-/* 更新游戏次数限制显示 */
+/* 游戏次数限制显示 */
+.play-limit-info {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.limit-display {
+    font-size: 16px;
+    color: #00ffff;
+    text-align: center;
+    font-weight: bold;
+}
+
 .limit-display.no-reward {
     color: #4fc3f7;
+}
+
+.limit-display.exceeded {
+    color: #ff6b6b;
+}
+
+.remaining-count {
+    font-size: 24px;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin: 0 5px;
 }
 
 .sub-text {
@@ -36,6 +404,110 @@
     font-size: 14px;
     color: rgba(255, 255, 255, 0.8);
     margin-top: 5px;
+}
+
+.reset-time {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 10px;
+}
+
+.play-again-text {
+    margin: 10px 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+}
+
+/* 霓虹按钮 */
+.neon-btn, .play-btn, .play-again-btn {
+    position: relative;
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 20px 10px 10px;
+    box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+}
+
+.neon-btn:hover:not(:disabled),
+.play-btn:hover:not(:disabled),
+.play-again-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
+}
+
+.neon-btn:active:not(:disabled),
+.play-btn:active:not(:disabled),
+.play-again-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.neon-btn:disabled,
+.play-btn:disabled,
+.play-again-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background: linear-gradient(45deg, #666, #999);
+}
+
+.btn-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.neon-btn:hover:not(:disabled) .btn-glow,
+.play-btn:hover:not(:disabled) .btn-glow,
+.play-again-btn:hover:not(:disabled) .btn-glow {
+    opacity: 1;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* 结果面板 */
+.final-score {
+    margin: 30px 0;
+}
+
+.final-score span {
+    display: block;
+    font-size: 20px;
+    opacity: 0.8;
+    margin-bottom: 10px;
+}
+
+.score-value {
+    font-size: 72px;
+    font-weight: bold;
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    animation: scoreGlow 2s ease-in-out infinite;
+}
+
+@keyframes scoreGlow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 /* 新纪录显示 */
@@ -55,6 +527,22 @@
     font-size: 14px;
     color: rgba(255, 255, 255, 0.7);
     margin-top: 10px;
+}
+
+/* 奖励部分 */
+.reward-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+}
+
+.reward-level {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 /* 奖励选择 */
@@ -118,6 +606,62 @@
     color: rgba(255, 255, 255, 0.7);
 }
 
+/* 兑换码显示 */
+.reward-code label {
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
+.code-display {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.code-display input {
+    padding: 10px 15px;
+    font-size: 18px;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    width: 250px;
+}
+
+.copy-btn {
+    padding: 10px 20px;
+    background: linear-gradient(45deg, #00ff00, #00cc00);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.copy-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 255, 0, 0.3);
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+.no-stock {
+    padding: 20px;
+    font-size: 20px;
+    color: #ff6b6b;
+}
+
+.no-stock p {
+    margin: 5px 0;
+}
+
 /* 练习模式 */
 .practice-mode {
     text-align: center;
@@ -135,8 +679,136 @@
     margin: 8px 0;
 }
 
-/* 响应式更新 */
+/* 粒子效果容器 */
+#particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 200;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFly 1s ease-out forwards;
+}
+
+@keyframes particleFly {
+    to {
+        transform: translate(var(--tx), var(--ty));
+        opacity: 0;
+    }
+}
+
+/* 响应式设计 - 平板 */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .main-panel, .result-panel {
+        width: 700px;
+        padding: 35px;
+    }
+    
+    .neon-text {
+        font-size: 42px;
+    }
+}
+
+/* 响应式设计 - 手机横屏 */
+@media (max-width: 768px) and (orientation: landscape) {
+    .main-panel, .result-panel {
+        padding: 20px;
+        max-height: 85vh;
+    }
+    
+    .neon-text {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+    
+    .rules {
+        padding: 15px;
+    }
+    
+    .reward-info {
+        padding: 10px;
+    }
+    
+    .play-limit-info {
+        padding: 10px;
+    }
+}
+
+/* 响应式设计 - 手机竖屏 */
 @media (max-width: 768px) {
+    .neon-text {
+        font-size: 36px;
+    }
+    
+    .main-panel, .result-panel {
+        padding: 30px 20px;
+        width: 95%;
+    }
+    
+    .score-value {
+        font-size: 56px;
+    }
+    
+    .top-bar {
+        padding: 10px 20px;
+        gap: 20px;
+    }
+    
+    .score-display .value, .time-display .value {
+        font-size: 24px;
+    }
+    
+    .code-display {
+        flex-direction: column;
+    }
+    
+    .code-display input {
+        width: 100%;
+    }
+    
+    .reward-info {
+        padding: 12px;
+    }
+    
+    .reward-info div {
+        font-size: 12px !important;
+        line-height: 1.5 !important;
+    }
+    
+    .rule-item {
+        font-size: 16px;
+    }
+    
+    .rules {
+        padding: 15px;
+    }
+    
+    .rules h3 {
+        font-size: 18px;
+    }
+    
+    .play-limit-info {
+        padding: 12px;
+    }
+    
+    .limit-display {
+        font-size: 14px;
+    }
+    
+    .remaining-count {
+        font-size: 20px;
+    }
+    
     .high-score-value {
         font-size: 28px;
     }
@@ -149,9 +821,66 @@
     .choice-btn {
         width: 100%;
     }
+    
+    .high-score-display {
+        margin: 10px 0;
+        padding: 10px;
+    }
 }
 
+/* 响应式设计 - 小手机 */
 @media (max-width: 480px) {
+    .neon-text {
+        font-size: 28px;
+    }
+    
+    .rule-item {
+        font-size: 14px;
+    }
+    
+    .star-icon {
+        font-size: 20px;
+    }
+    
+    .neon-btn, .play-btn, .play-again-btn {
+        padding: 12px 30px;
+        font-size: 16px;
+    }
+    
+    .score-value {
+        font-size: 48px;
+    }
+    
+    .reward-level {
+        font-size: 20px;
+    }
+    
+    .top-bar {
+        padding: 8px 15px;
+        gap: 15px;
+    }
+    
+    .score-display .label, .time-display .label {
+        font-size: 12px;
+    }
+    
+    .score-display .value, .time-display .value {
+        font-size: 20px;
+    }
+    
+    .play-limit-info {
+        margin: 15px 0;
+        padding: 10px;
+    }
+    
+    .limit-display {
+        font-size: 13px;
+    }
+    
+    .remaining-count {
+        font-size: 18px;
+    }
+    
     .high-score-display {
         padding: 10px;
     }
@@ -163,5 +892,73 @@
     .choice-btn {
         padding: 10px 20px;
         font-size: 14px;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 360px) {
+    .main-panel, .result-panel {
+        padding: 20px 15px;
+    }
+    
+    .neon-text {
+        font-size: 24px;
+    }
+    
+    .rules {
+        padding: 12px;
+    }
+    
+    .reward-info {
+        padding: 10px;
+        font-size: 11px;
+    }
+    
+    .reward-info div {
+        font-size: 11px !important;
+    }
+    
+    .play-limit-info {
+        padding: 8px;
+    }
+    
+    .limit-display {
+        font-size: 12px;
+    }
+    
+    .remaining-count {
+        font-size: 16px;
+    }
+}
+
+/* 高分辨率屏幕优化 */
+@media (min-width: 1920px) {
+    .main-panel, .result-panel {
+        width: 800px;
+        padding: 50px;
+    }
+    
+    .neon-text {
+        font-size: 56px;
+    }
+    
+    .rule-item {
+        font-size: 20px;
+    }
+    
+    .star-icon {
+        font-size: 28px;
+    }
+    
+    .play-limit-info {
+        padding: 20px;
+    }
+    
+    .limit-display {
+        font-size: 18px;
+    }
+    
+    .remaining-count {
+        font-size: 28px;
     }
 }
