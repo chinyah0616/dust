@@ -9,7 +9,7 @@ const GAME_CONFIG = {
     stardustSpeed: 7,
     blackHoleSpeed: 10,
     spawnRate: 0.15,
-    blackHoleSpawnRate: 0.15,
+    blackHoleSpawnRate: 0.17,
     touchOffset: 50,
     rewardPlayLimit: 3 // 可获得奖励的游戏次数
 };
