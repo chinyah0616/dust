@@ -1,41 +1,177 @@
-<!-- 游戏结束界面 -->
-<div id="end-screen" class="screen-overlay" style="display:none;">
-    <div class="glass-panel result-panel">
-        <h2 class="neon-text">游戏结束</h2>
-        <div class="final-score">
-            <span>最终得分</span>
-            <div class="score-value" id="finalScore">0</div>
-            <!-- 新纪录/最高分显示将通过JS动态添加 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>星尘收集者 - 赢取奖励</title>
+    <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+    <!-- 防调试保护 -->
+    <div id="debugger-warning" style="display:none;">
+        <h1>⚠️ 检测到非法操作</h1>
+        <p>请关闭开发者工具</p>
+    </div>
+
+    <!-- 游戏容器 -->
+    <div id="game-container">
+        <!-- 星空背景 -->
+        <div class="starfield">
+            <div class="stars"></div>
+            <div class="nebula"></div>
         </div>
-        
-        <div class="reward-section" id="rewardSection">
-            <div class="reward-level" id="rewardLevel"></div>
-            <!-- 奖励选择将通过JS动态添加 -->
-            <div class="reward-code" id="rewardCode" style="display:none;">
-                <label>您的兑换码</label>
-                <div class="code-display">
-                    <input type="text" id="codeText" readonly>
-                    <button class="copy-btn" id="copyBtn">复制</button>
+
+        <!-- 游戏画布 -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- UI层 -->
+        <div class="game-ui">
+            <!-- 顶部信息栏 -->
+            <div class="top-bar glass-panel">
+                <div class="score-display">
+                    <span class="label">积分</span>
+                    <span class="value" id="score">0</span>
+                </div>
+                <div class="time-display">
+                    <span class="label">时间</span>
+                    <span class="value" id="timer">30</span>
                 </div>
             </div>
-            <div class="no-stock" id="noStock" style="display:none;">
-                <p>😔 暂无库存</p>
-                <p>请稍后再试</p>
+
+            <!-- 游戏开始界面 -->
+            <div id="start-screen" class="screen-overlay">
+                <div class="glass-panel main-panel">
+                    <h1 class="neon-text">星尘收集者</h1>
+                    
+                    <!-- 昵称输入 -->
+                    <div id="nicknameSection" class="nickname-section">
+                        <div class="nickname-input-group">
+                            <input type="text" id="nicknameInput" placeholder="请输入昵称" maxlength="12">
+                            <button id="confirmNickname" class="nickname-btn">确定</button>
+                        </div>
+                        <div class="nickname-hint">最多6个汉字或12个英文字母，不允许符号</div>
+                        <div id="nicknameError" class="nickname-error"></div>
+                    </div>
+
+                    <!-- 游戏内容（初始隐藏） -->
+                    <div id="gameContent" style="display: none;">
+                        <!-- 玩家信息 -->
+                        <div class="player-info">
+                            <span class="player-label">玩家：</span>
+                            <span id="playerName" class="player-name"></span>
+                            <button id="changeNickname" class="change-btn">更改</button>
+                        </div>
+
+                        <!-- 排行榜按钮 -->
+                        <button id="showLeaderboard" class="leaderboard-btn">
+                            🏆 排行榜
+                        </button>
+
+                        <!-- 最高分显示将通过JS动态添加 -->
+                        
+                        <div class="rules">
+                            <h3>游戏规则</h3>
+                            <p style="margin-bottom: 15px; color: rgba(255,255,255,0.8); font-size: 14px;">
+                                控制飞船收集星尘，30秒内获取最高分！
+                            </p>
+                            <div class="rule-item">
+                                <span class="star-icon pink">★</span> 粉色星尘 = 5分
+                            </div>
+                            <div class="rule-item">
+                                <span class="star-icon green">★</span> 绿色星尘 = 10分
+                            </div>
+                            <div class="rule-item">
+                                <span class="star-icon rainbow">★</span> 彩虹星尘 = 25分
+                            </div>
+                            <div class="rule-item">
+                                <span class="black-hole">●</span> 碰到黑洞 = -30分
+                            </div>
+                        </div>
+                        
+                        <div class="reward-info">
+                            <h4 style="margin-bottom: 10px; color: rgba(255,255,255,0.9);">奖励等级</h4>
+                            <div style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
+                                <div>0-299分 → 参与奖（1元兑换码）</div>
+                                <div>300-699分 → 铜质奖励（5元兑换码）</div>
+                                <div>700-999分 → 银质奖励（10元兑换码）</div>
+                                <div>1000-1999分 → 金质奖励（50元兑换码）</div>
+                                <div>2000分+ → 星钻奖励（100元兑换码）</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 游戏次数信息将通过JS动态添加 -->
+                        
+                        <button class="play-btn neon-btn" id="startBtn">
+                            <span>开始游戏</span>
+                            <div class="btn-glow"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 排行榜界面 -->
+            <div id="leaderboard-screen" class="screen-overlay" style="display:none;">
+                <div class="glass-panel leaderboard-panel">
+                    <h2 class="neon-text">排行榜 TOP 10</h2>
+                    <div id="leaderboardList" class="leaderboard-list">
+                        <!-- 动态生成 -->
+                    </div>
+                    <button id="closeLeaderboard" class="close-leaderboard-btn">
+                        返回
+                    </button>
+                </div>
+            </div>
+
+            <!-- 游戏结束界面 -->
+            <div id="end-screen" class="screen-overlay" style="display:none;">
+                <div class="glass-panel result-panel">
+                    <h2 class="neon-text">游戏结束</h2>
+                    <div class="final-score">
+                        <span>最终得分</span>
+                        <div class="score-value" id="finalScore">0</div>
+                        <!-- 新纪录/最高分显示将通过JS动态添加 -->
+                    </div>
+                    
+                    <div class="reward-section" id="rewardSection">
+                        <div class="reward-level" id="rewardLevel"></div>
+                        <!-- 奖励选择将通过JS动态添加 -->
+                        <div class="reward-code" id="rewardCode" style="display:none;">
+                            <label>您的兑换码</label>
+                            <div class="code-display">
+                                <input type="text" id="codeText" readonly>
+                                <button class="copy-btn" id="copyBtn">复制</button>
+                            </div>
+                        </div>
+                        <div class="no-stock" id="noStock" style="display:none;">
+                            <p>😔 暂无库存</p>
+                            <p>请稍后再试</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 再玩一次提示将通过JS动态添加 -->
+                    
+                    <!-- 按钮组 -->
+                    <div class="end-buttons">
+                        <button class="play-again-btn neon-btn" id="playAgainBtn">
+                            <span>再玩一次</span>
+                            <div class="btn-glow"></div>
+                        </button>
+                        <button class="view-leaderboard-btn neon-btn" id="viewLeaderboardBtn">
+                            <span>🏆 排行榜</span>
+                            <div class="btn-glow"></div>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- 再玩一次提示将通过JS动态添加 -->
-        
-        <!-- 按钮组 -->
-        <div class="end-buttons">
-            <button class="play-again-btn neon-btn" id="playAgainBtn">
-                <span>再玩一次</span>
-                <div class="btn-glow"></div>
-            </button>
-            <button class="view-leaderboard-btn neon-btn" id="viewLeaderboardBtn">
-                <span>🏆 排行榜</span>
-                <div class="btn-glow"></div>
-            </button>
-        </div>
+
+        <!-- 粒子效果容器 -->
+        <div id="particles"></div>
     </div>
-</div>
+
+    <script src="js/sounds.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
