@@ -42,6 +42,9 @@
             <div id="start-screen" class="screen-overlay">
                 <div class="glass-panel main-panel">
                     <h1 class="neon-text">星尘收集者</h1>
+                    
+                    <!-- 最高分显示将通过JS动态添加 -->
+                    
                     <div class="rules">
                         <h3>游戏规则</h3>
                         <p style="margin-bottom: 15px; color: rgba(255,255,255,0.8); font-size: 14px;">
@@ -60,6 +63,7 @@
                             <span class="black-hole">●</span> 碰到黑洞 = -30分
                         </div>
                     </div>
+                    
                     <div class="reward-info">
                         <h4 style="margin-bottom: 10px; color: rgba(255,255,255,0.9);">奖励等级</h4>
                         <div style="font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6;">
@@ -70,6 +74,9 @@
                             <div>2000分+ → 星钻奖励（100元兑换码）</div>
                         </div>
                     </div>
+                    
+                    <!-- 游戏次数信息将通过JS动态添加 -->
+                    
                     <button class="play-btn neon-btn" id="startBtn">
                         <span>开始游戏</span>
                         <div class="btn-glow"></div>
@@ -84,9 +91,12 @@
                     <div class="final-score">
                         <span>最终得分</span>
                         <div class="score-value" id="finalScore">0</div>
+                        <!-- 新纪录/最高分显示将通过JS动态添加 -->
                     </div>
+                    
                     <div class="reward-section" id="rewardSection">
                         <div class="reward-level" id="rewardLevel"></div>
+                        <!-- 奖励选择将通过JS动态添加 -->
                         <div class="reward-code" id="rewardCode" style="display:none;">
                             <label>您的兑换码</label>
                             <div class="code-display">
@@ -99,6 +109,9 @@
                             <p>请稍后再试</p>
                         </div>
                     </div>
+                    
+                    <!-- 再玩一次提示将通过JS动态添加 -->
+                    
                     <button class="play-again-btn neon-btn" id="playAgainBtn">
                         <span>再玩一次</span>
                         <div class="btn-glow"></div>
