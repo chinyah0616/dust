@@ -5,11 +5,11 @@ const GAME_CONFIG = {
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 70,
-    stardustSpeed: 4,
-    blackHoleSpeed: 5,
-    spawnRate: 0.03,
-    blackHoleSpawnRate: 0.015,
+    blackHoleSize: 55,
+    stardustSpeed: 7,
+    blackHoleSpeed: 10,
+    spawnRate: 0.15,
+    blackHoleSpawnRate: 0.15,
     touchOffset: 50,
     rewardPlayLimit: 3 // 可获得奖励的游戏次数
 };
