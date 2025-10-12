@@ -5,11 +5,11 @@ const GAME_CONFIG = {
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 55,
-    stardustSpeed: 6,
-    blackHoleSpeed: 10,
-    spawnRate: 0.1,
-    blackHoleSpawnRate: 0.15,
+    blackHoleSize: 70,
+    stardustSpeed: 4,
+    blackHoleSpeed: 5,
+    spawnRate: 0.03,
+    blackHoleSpawnRate: 0.015,
     touchOffset: 50,
     rewardPlayLimit: 3 // 可获得奖励的游戏次数
 };
@@ -60,872 +60,910 @@ let gameState = {
     highScore: 0
 };
 
-// 获取DOM元素
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const startScreen = document.getElementById('start-screen');
-const endScreen = document.getElementById('end-screen');
-const scoreDisplay = document.getElementById('score');
-const timerDisplay = document.getElementById('timer');
-const finalScoreDisplay = document.getElementById('finalScore');
-const rewardSection = document.getElementById('rewardSection');
-const rewardLevel = document.getElementById('rewardLevel');
-const rewardCode = document.getElementById('rewardCode');
-const codeText = document.getElementById('codeText');
-const noStock = document.getElementById('noStock');
-const startBtn = document.getElementById('startBtn');
-const playAgainBtn = document.getElementById('playAgainBtn');
-const copyBtn = document.getElementById('copyBtn');
+// 等待DOM加载完成
+window.addEventListener('DOMContentLoaded', function() {
+    // 获取DOM元素
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('start-screen');
+    const endScreen = document.getElementById('end-screen');
+    const scoreDisplay = document.getElementById('score');
+    const timerDisplay = document.getElementById('timer');
+    const finalScoreDisplay = document.getElementById('finalScore');
+    const rewardSection = document.getElementById('rewardSection');
+    const rewardLevel = document.getElementById('rewardLevel');
+    const rewardCode = document.getElementById('rewardCode');
+    const codeText = document.getElementById('codeText');
+    const noStock = document.getElementById('noStock');
+    const startBtn = document.getElementById('startBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const copyBtn = document.getElementById('copyBtn');
 
-// 获取玩家IP
-async function getPlayerIP() {
-    try {
-        const response = await fetch(IP_SERVICE);
-        const data = await response.json();
-        return data.ip;
-    } catch (error) {
-        console.error('Failed to get IP:', error);
-        let localId = localStorage.getItem('playerLocalId');
-        if (!localId) {
-            localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('playerLocalId', localId);
-        }
-        return localId;
-    }
-}
-
-// 获取今日奖励游戏次数
-function getTodayRewardPlays(ip) {
-    const today = new Date().toDateString();
-    const storageKey = `rewardPlays_${ip}_${today}`;
-    const plays = localStorage.getItem(storageKey);
-    return plays ? parseInt(plays) : 0;
-}
-
-// 获取今日总游戏次数
-function getTotalPlaysToday(ip) {
-    const today = new Date().toDateString();
-    const storageKey = `totalPlays_${ip}_${today}`;
-    const plays = localStorage.getItem(storageKey);
-    return plays ? parseInt(plays) : 0;
-}
-
-// 获取历史最高分
-function getHighScore() {
-    const score = localStorage.getItem('highScore');
-    return score ? parseInt(score) : 0;
-}
-
-// 保存最高分
-function saveHighScore(score) {
-    const currentHigh = getHighScore();
-    if (score > currentHigh) {
-        localStorage.setItem('highScore', score);
-        return true; // 返回true表示破纪录
-    }
-    return false;
-}
-
-// 增加奖励游戏次数
-function incrementRewardPlays(ip) {
-    const today = new Date().toDateString();
-    const storageKey = `rewardPlays_${ip}_${today}`;
-    const currentPlays = getTodayRewardPlays(ip);
-    localStorage.setItem(storageKey, currentPlays + 1);
-    return currentPlays + 1;
-}
-
-// 增加总游戏次数
-function incrementTotalPlays(ip) {
-    const today = new Date().toDateString();
-    const storageKey = `totalPlays_${ip}_${today}`;
-    const currentPlays = getTotalPlaysToday(ip);
-    localStorage.setItem(storageKey, currentPlays + 1);
-    return currentPlays + 1;
-}
-
-// 清理过期的游戏记录
-function cleanOldPlayRecords() {
-    const today = new Date().toDateString();
-    const keysToRemove = [];
-    
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('rewardPlays_') || key.startsWith('totalPlays_')) && !key.includes(today)) {
-            keysToRemove.push(key);
+    // 获取玩家IP
+    async function getPlayerIP() {
+        try {
+            const response = await fetch(IP_SERVICE);
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            console.error('Failed to get IP:', error);
+            let localId = localStorage.getItem('playerLocalId');
+            if (!localId) {
+                localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('playerLocalId', localId);
+            }
+            return localId;
         }
     }
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-}
 
-// 检查游戏状态
-async function checkGameStatus() {
-    if (!gameState.playerIP) {
-        gameState.playerIP = await getPlayerIP();
+    // 获取今日奖励游戏次数
+    function getTodayRewardPlays(ip) {
+        const today = new Date().toDateString();
+        const storageKey = `rewardPlays_${ip}_${today}`;
+        const plays = localStorage.getItem(storageKey);
+        return plays ? parseInt(plays) : 0;
     }
-    
-    cleanOldPlayRecords();
-    
-    gameState.todayRewardPlays = getTodayRewardPlays(gameState.playerIP);
-    gameState.totalPlaysToday = getTotalPlaysToday(gameState.playerIP);
-    gameState.canGetReward = gameState.todayRewardPlays < GAME_CONFIG.rewardPlayLimit;
-    gameState.highScore = getHighScore();
-    
-    updatePlayStatusUI();
-}
 
-// 更新游戏状态UI
-function updatePlayStatusUI() {
-    const remainingRewardPlays = GAME_CONFIG.rewardPlayLimit - gameState.todayRewardPlays;
-    
-    // 显示最高分
-    let highScoreDisplay = document.getElementById('highScoreDisplay');
-    if (!highScoreDisplay) {
-        highScoreDisplay = document.createElement('div');
-        highScoreDisplay.id = 'highScoreDisplay';
-        highScoreDisplay.className = 'high-score-display';
-        const mainPanel = document.querySelector('.main-panel');
-        mainPanel.insertBefore(highScoreDisplay, document.querySelector('.rules'));
+    // 获取今日总游戏次数
+    function getTotalPlaysToday(ip) {
+        const today = new Date().toDateString();
+        const storageKey = `totalPlays_${ip}_${today}`;
+        const plays = localStorage.getItem(storageKey);
+        return plays ? parseInt(plays) : 0;
     }
-    highScoreDisplay.innerHTML = `
-        <div class="high-score-label">🏆 最高纪录</div>
-        <div class="high-score-value">${gameState.highScore}</div>
-    `;
-    
-    // 显示游戏次数信息
-    let limitInfo = document.getElementById('playLimitInfo');
-    if (!limitInfo) {
-        limitInfo = document.createElement('div');
-        limitInfo.id = 'playLimitInfo';
-        limitInfo.className = 'play-limit-info';
-        const mainPanel = document.querySelector('.main-panel');
-        mainPanel.insertBefore(limitInfo, startBtn);
-    }
-    
-    if (remainingRewardPlays > 0) {
-        limitInfo.innerHTML = `
-            <div class="limit-display">
-                🎁 可获得奖励次数：<span class="remaining-count">${remainingRewardPlays}</span> / ${GAME_CONFIG.rewardPlayLimit}
-                <div class="sub-text">用完后可继续游玩，但不再发放兑换码</div>
-            </div>
-        `;
-    } else {
-        limitInfo.innerHTML = `
-            <div class="limit-display no-reward">
-                练习模式
-                <div class="sub-text">今日奖励次数已用完，继续游玩不会获得兑换码</div>
-                <div class="play-count">今日已玩 ${gameState.totalPlaysToday} 次</div>
-            </div>
-        `;
-    }
-    
-    // 开始按钮始终可用
-    startBtn.disabled = false;
-    startBtn.style.opacity = '1';
-}
 
-// 初始化画布
-function initCanvas() {
-    GAME_CONFIG.canvasWidth = window.innerWidth;
-    GAME_CONFIG.canvasHeight = window.innerHeight;
-    canvas.width = GAME_CONFIG.canvasWidth;
-    canvas.height = GAME_CONFIG.canvasHeight;
-}
+    // 获取历史最高分
+    function getHighScore() {
+        const score = localStorage.getItem('highScore');
+        return score ? parseInt(score) : 0;
+    }
 
-// 星尘类
-class Stardust {
-    constructor() {
-        this.x = Math.random() * GAME_CONFIG.canvasWidth;
-        this.y = -GAME_CONFIG.stardustSize;
-        this.speed = GAME_CONFIG.stardustSpeed + Math.random() * 2;
-        this.rotation = 0;
-        this.rotationSpeed = Math.random() * 0.1 - 0.05;
+    // 保存最高分
+    function saveHighScore(score) {
+        const currentHigh = getHighScore();
+        if (score > currentHigh) {
+            localStorage.setItem('highScore', score);
+            return true;
+        }
+        return false;
+    }
+
+    // 增加奖励游戏次数
+    function incrementRewardPlays(ip) {
+        const today = new Date().toDateString();
+        const storageKey = `rewardPlays_${ip}_${today}`;
+        const currentPlays = getTodayRewardPlays(ip);
+        localStorage.setItem(storageKey, currentPlays + 1);
+        return currentPlays + 1;
+    }
+
+    // 增加总游戏次数
+    function incrementTotalPlays(ip) {
+        const today = new Date().toDateString();
+        const storageKey = `totalPlays_${ip}_${today}`;
+        const currentPlays = getTotalPlaysToday(ip);
+        localStorage.setItem(storageKey, currentPlays + 1);
+        return currentPlays + 1;
+    }
+
+    // 清理过期的游戏记录
+    function cleanOldPlayRecords() {
+        const today = new Date().toDateString();
+        const keysToRemove = [];
         
-        const rand = Math.random();
-        if (rand < 0.1) {
-            this.type = 'rainbow';
-            this.color = null;
-        } else if (rand < 0.4) {
-            this.type = 'green';
-            this.color = '#00ff00';
-        } else {
-            this.type = 'pink';
-            this.color = '#ff69b4';
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('rewardPlays_') || key.startsWith('totalPlays_')) && !key.includes(today)) {
+                keysToRemove.push(key);
+            }
+        }
+        
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+
+    // 检查游戏状态
+    async function checkGameStatus() {
+        if (!gameState.playerIP) {
+            gameState.playerIP = await getPlayerIP();
+        }
+        
+        cleanOldPlayRecords();
+        
+        gameState.todayRewardPlays = getTodayRewardPlays(gameState.playerIP);
+        gameState.totalPlaysToday = getTotalPlaysToday(gameState.playerIP);
+        gameState.canGetReward = gameState.todayRewardPlays < GAME_CONFIG.rewardPlayLimit;
+        gameState.highScore = getHighScore();
+        
+        updatePlayStatusUI();
+    }
+
+    // 更新游戏状态UI
+    function updatePlayStatusUI() {
+        const remainingRewardPlays = GAME_CONFIG.rewardPlayLimit - gameState.todayRewardPlays;
+        
+        // 显示最高分
+        let highScoreDisplay = document.getElementById('highScoreDisplay');
+        if (!highScoreDisplay) {
+            highScoreDisplay = document.createElement('div');
+            highScoreDisplay.id = 'highScoreDisplay';
+            highScoreDisplay.className = 'high-score-display';
+            const mainPanel = document.querySelector('.main-panel');
+            if (mainPanel && document.querySelector('.rules')) {
+                mainPanel.insertBefore(highScoreDisplay, document.querySelector('.rules'));
+            }
+        }
+        if (highScoreDisplay) {
+            highScoreDisplay.innerHTML = `
+                <div class="high-score-label">🏆 最高纪录</div>
+                <div class="high-score-value">${gameState.highScore}</div>
+            `;
+        }
+        
+        // 显示游戏次数信息
+        let limitInfo = document.getElementById('playLimitInfo');
+        if (!limitInfo) {
+            limitInfo = document.createElement('div');
+            limitInfo.id = 'playLimitInfo';
+            limitInfo.className = 'play-limit-info';
+            const mainPanel = document.querySelector('.main-panel');
+            if (mainPanel && startBtn) {
+                mainPanel.insertBefore(limitInfo, startBtn);
+            }
+        }
+        
+        if (limitInfo) {
+            if (remainingRewardPlays > 0) {
+                limitInfo.innerHTML = `
+                    <div class="limit-display">
+                        🎁 可获得奖励次数：<span class="remaining-count">${remainingRewardPlays}</span> / ${GAME_CONFIG.rewardPlayLimit}
+                        <div class="sub-text">用完后可继续游玩，但不再发放兑换码</div>
+                    </div>
+                `;
+            } else {
+                limitInfo.innerHTML = `
+                    <div class="limit-display no-reward">
+                        练习模式
+                        <div class="sub-text">今日奖励次数已用完，继续游玩不会获得兑换码</div>
+                        <div class="play-count">今日已玩 ${gameState.totalPlaysToday} 次</div>
+                    </div>
+                `;
+            }
+        }
+        
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.style.opacity = '1';
         }
     }
-    
-    update() {
-        this.y += this.speed;
-        this.rotation += this.rotationSpeed;
+
+    // 初始化画布
+    function initCanvas() {
+        GAME_CONFIG.canvasWidth = window.innerWidth;
+        GAME_CONFIG.canvasHeight = window.innerHeight;
+        canvas.width = GAME_CONFIG.canvasWidth;
+        canvas.height = GAME_CONFIG.canvasHeight;
     }
-    
-    draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
+
+    // 星尘类
+    class Stardust {
+        constructor() {
+            this.x = Math.random() * GAME_CONFIG.canvasWidth;
+            this.y = -GAME_CONFIG.stardustSize;
+            this.speed = GAME_CONFIG.stardustSpeed + Math.random() * 2;
+            this.rotation = 0;
+            this.rotationSpeed = Math.random() * 0.1 - 0.05;
+            
+            const rand = Math.random();
+            if (rand < 0.1) {
+                this.type = 'rainbow';
+                this.color = null;
+            } else if (rand < 0.4) {
+                this.type = 'green';
+                this.color = '#00ff00';
+            } else {
+                this.type = 'pink';
+                this.color = '#ff69b4';
+            }
+        }
         
-        if (this.type === 'rainbow') {
-            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, GAME_CONFIG.stardustSize);
-            const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
-            colors.forEach((color, i) => {
-                gradient.addColorStop(i / colors.length, color);
-            });
+        update() {
+            this.y += this.speed;
+            this.rotation += this.rotationSpeed;
+        }
+        
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation);
+            
+            if (this.type === 'rainbow') {
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, GAME_CONFIG.stardustSize);
+                const colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'];
+                colors.forEach((color, i) => {
+                    gradient.addColorStop(i / colors.length, color);
+                });
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+            }
+            
+            drawStar(0, 0, GAME_CONFIG.stardustSize / 2, GAME_CONFIG.stardustSize / 4, 5);
+            
+            ctx.restore();
+        }
+        
+        isOffScreen() {
+            return this.y > GAME_CONFIG.canvasHeight + GAME_CONFIG.stardustSize;
+        }
+        
+        checkCollision(x, y) {
+            const distance = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
+            return distance < GAME_CONFIG.stardustSize + GAME_CONFIG.shipSize / 2;
+        }
+    }
+
+    // 黑洞类
+    class BlackHole {
+        constructor() {
+            this.x = Math.random() * GAME_CONFIG.canvasWidth;
+            this.y = -GAME_CONFIG.blackHoleSize;
+            this.speed = GAME_CONFIG.blackHoleSpeed + Math.random() * 2;
+            this.rotation = 0;
+            this.rotationSpeed = 0.05;
+            this.pulsePhase = Math.random() * Math.PI * 2;
+            this.size = GAME_CONFIG.blackHoleSize + Math.random() * 20 - 10;
+        }
+        
+        update() {
+            this.y += this.speed;
+            this.rotation += this.rotationSpeed;
+            this.pulsePhase += 0.05;
+        }
+        
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation);
+            
+            const pulseSize = this.size * (1 + Math.sin(this.pulsePhase) * 0.1);
+            
+            const gradient = ctx.createRadialGradient(0, 0, pulseSize * 0.3, 0, 0, pulseSize);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+            gradient.addColorStop(0.5, 'rgba(75, 0, 130, 0.8)');
+            gradient.addColorStop(1, 'rgba(75, 0, 130, 0)');
+            
             ctx.fillStyle = gradient;
-        } else {
-            ctx.fillStyle = this.color;
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = this.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(0, 0, pulseSize * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(128, 0, 255, 0.5)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.ellipse(0, 0, pulseSize * 0.6, pulseSize * 0.2, this.rotation + i * Math.PI / 3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
         }
         
-        drawStar(0, 0, GAME_CONFIG.stardustSize / 2, GAME_CONFIG.stardustSize / 4, 5);
+        isOffScreen() {
+            return this.y > GAME_CONFIG.canvasHeight + this.size;
+        }
         
-        ctx.restore();
+        checkCollision(x, y) {
+            const distance = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
+            return distance < this.size * 0.7 + GAME_CONFIG.shipSize / 2;
+        }
     }
-    
-    isOffScreen() {
-        return this.y > GAME_CONFIG.canvasHeight + GAME_CONFIG.stardustSize;
-    }
-    
-    checkCollision(x, y) {
-        const distance = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
-        return distance < GAME_CONFIG.stardustSize + GAME_CONFIG.shipSize / 2;
-    }
-}
 
-// 黑洞类
-class BlackHole {
-    constructor() {
-        this.x = Math.random() * GAME_CONFIG.canvasWidth;
-        this.y = -GAME_CONFIG.blackHoleSize;
-        this.speed = GAME_CONFIG.blackHoleSpeed + Math.random() * 2;
-        this.rotation = 0;
-        this.rotationSpeed = 0.05;
-        this.pulsePhase = Math.random() * Math.PI * 2;
-        this.size = GAME_CONFIG.blackHoleSize + Math.random() * 20 - 10;
+    // 粒子类
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.vx = (Math.random() - 0.5) * 10;
+            this.vy = (Math.random() - 0.5) * 10;
+            this.life = 1;
+            this.color = color;
+            this.size = Math.random() * 3 + 2;
+        }
+        
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.life -= 0.02;
+            this.vx *= 0.98;
+            this.vy *= 0.98;
+        }
+        
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        isDead() {
+            return this.life <= 0;
+        }
     }
-    
-    update() {
-        this.y += this.speed;
-        this.rotation += this.rotationSpeed;
-        this.pulsePhase += 0.05;
+
+    // 绘制星形
+    function drawStar(cx, cy, outerRadius, innerRadius, points) {
+        let angle = -Math.PI / 2;
+        const angleStep = Math.PI / points;
+        
+        ctx.beginPath();
+        for (let i = 0; i < points * 2; i++) {
+            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
+            
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+            angle += angleStep;
+        }
+        ctx.closePath();
+        ctx.fill();
     }
-    
-    draw() {
+
+    // 绘制飞船
+    function drawShip(x, y) {
         ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
+        ctx.translate(x, y);
         
-        const pulseSize = this.size * (1 + Math.sin(this.pulsePhase) * 0.1);
-        
-        const gradient = ctx.createRadialGradient(0, 0, pulseSize * 0.3, 0, 0, pulseSize);
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-        gradient.addColorStop(0.5, 'rgba(75, 0, 130, 0.8)');
-        gradient.addColorStop(1, 'rgba(75, 0, 130, 0)');
+        const gradient = ctx.createLinearGradient(-GAME_CONFIG.shipSize/2, 0, GAME_CONFIG.shipSize/2, 0);
+        gradient.addColorStop(0, '#00ffff');
+        gradient.addColorStop(0.5, '#ffffff');
+        gradient.addColorStop(1, '#00ffff');
         
         ctx.fillStyle = gradient;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#00ffff';
+        
         ctx.beginPath();
-        ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
+        ctx.moveTo(0, -GAME_CONFIG.shipSize/2);
+        ctx.lineTo(-GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/2);
+        ctx.lineTo(GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/2);
+        ctx.closePath();
         ctx.fill();
         
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(0, 0, pulseSize * 0.3, 0, Math.PI * 2);
-        ctx.fill();
+        const engineGlow = ctx.createRadialGradient(0, GAME_CONFIG.shipSize/2, 0, 0, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/3);
+        engineGlow.addColorStop(0, 'rgba(255, 100, 0, 0.8)');
+        engineGlow.addColorStop(1, 'rgba(255, 200, 0, 0)');
         
-        ctx.strokeStyle = 'rgba(128, 0, 255, 0.5)';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            ctx.beginPath();
-            ctx.ellipse(0, 0, pulseSize * 0.6, pulseSize * 0.2, this.rotation + i * Math.PI / 3, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+        ctx.fillStyle = engineGlow;
+        ctx.beginPath();
+        ctx.arc(-GAME_CONFIG.shipSize/4, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(GAME_CONFIG.shipSize/4, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/4, 0, Math.PI * 2);
+        ctx.fill();
         
         ctx.restore();
     }
-    
-    isOffScreen() {
-        return this.y > GAME_CONFIG.canvasHeight + this.size;
-    }
-    
-    checkCollision(x, y) {
-        const distance = Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
-        return distance < this.size * 0.7 + GAME_CONFIG.shipSize / 2;
-    }
-}
 
-// 粒子类
-class Particle {
-    constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.vx = (Math.random() - 0.5) * 10;
-        this.vy = (Math.random() - 0.5) * 10;
-        this.life = 1;
-        this.color = color;
-        this.size = Math.random() * 3 + 2;
+    // 创建粒子爆炸效果
+    function createParticleExplosion(x, y, color, count = 20) {
+        for (let i = 0; i < count; i++) {
+            gameState.particles.push(new Particle(x, y, color));
+        }
     }
-    
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life -= 0.02;
-        this.vx *= 0.98;
-        this.vy *= 0.98;
-    }
-    
-    draw() {
-        ctx.save();
-        ctx.globalAlpha = this.life;
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
-    
-    isDead() {
-        return this.life <= 0;
-    }
-}
 
-// 绘制星形
-function drawStar(cx, cy, outerRadius, innerRadius, points) {
-    let angle = -Math.PI / 2;
-    const angleStep = Math.PI / points;
-    
-    ctx.beginPath();
-    for (let i = 0; i < points * 2; i++) {
-        const radius = i % 2 === 0 ? outerRadius : innerRadius;
-        const x = cx + Math.cos(angle) * radius;
-        const y = cy + Math.sin(angle) * radius;
+    // 播放收集音效
+    function playCollectSound(type) {
+        if (window.GameSounds) {
+            try {
+                window.GameSounds.playCollectSound(type);
+            } catch (e) {
+                console.log('Sound play failed:', e);
+            }
+        }
+    }
+
+    // 播放黑洞音效
+    function playBlackHoleSound() {
+        if (window.GameSounds) {
+            try {
+                window.GameSounds.playBlackHoleSound();
+            } catch (e) {
+                console.log('Sound play failed:', e);
+            }
+        }
+    }
+
+    // 游戏主循环
+    function gameLoop() {
+        if (!gameState.isPlaying) return;
         
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-        angle += angleStep;
-    }
-    ctx.closePath();
-    ctx.fill();
-}
-
-// 绘制飞船
-function drawShip(x, y) {
-    ctx.save();
-    ctx.translate(x, y);
-    
-    const gradient = ctx.createLinearGradient(-GAME_CONFIG.shipSize/2, 0, GAME_CONFIG.shipSize/2, 0);
-    gradient.addColorStop(0, '#00ffff');
-    gradient.addColorStop(0.5, '#ffffff');
-    gradient.addColorStop(1, '#00ffff');
-    
-    ctx.fillStyle = gradient;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#00ffff';
-    
-    ctx.beginPath();
-    ctx.moveTo(0, -GAME_CONFIG.shipSize/2);
-    ctx.lineTo(-GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/2);
-    ctx.lineTo(GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/2);
-    ctx.closePath();
-    ctx.fill();
-    
-    const engineGlow = ctx.createRadialGradient(0, GAME_CONFIG.shipSize/2, 0, 0, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/3);
-    engineGlow.addColorStop(0, 'rgba(255, 100, 0, 0.8)');
-    engineGlow.addColorStop(1, 'rgba(255, 200, 0, 0)');
-    
-    ctx.fillStyle = engineGlow;
-    ctx.beginPath();
-    ctx.arc(-GAME_CONFIG.shipSize/4, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(GAME_CONFIG.shipSize/4, GAME_CONFIG.shipSize/2, GAME_CONFIG.shipSize/4, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.restore();
-}
-
-// 创建粒子爆炸效果
-function createParticleExplosion(x, y, color, count = 20) {
-    for (let i = 0; i < count; i++) {
-        gameState.particles.push(new Particle(x, y, color));
-    }
-}
-
-// 播放收集音效
-function playCollectSound(type) {
-    if (window.GameSounds) {
-        try {
-            window.GameSounds.playCollectSound(type);
-        } catch (e) {
-            console.log('Sound play failed:', e);
-        }
-    }
-}
-
-// 播放黑洞音效
-function playBlackHoleSound() {
-    if (window.GameSounds) {
-        try {
-            window.GameSounds.playBlackHoleSound();
-        } catch (e) {
-            console.log('Sound play failed:', e);
-        }
-    }
-}
-
-// 游戏主循环
-function gameLoop() {
-    if (!gameState.isPlaying) return;
-    
-    ctx.clearRect(0, 0, GAME_CONFIG.canvasWidth, GAME_CONFIG.canvasHeight);
-    
-    if (Math.random() < GAME_CONFIG.spawnRate) {
-        gameState.stardusts.push(new Stardust());
-    }
-    
-    if (Math.random() < GAME_CONFIG.blackHoleSpawnRate) {
-        gameState.blackHoles.push(new BlackHole());
-    }
-    
-    if (gameState.timeLeft < 20 && Math.random() < 0.005) {
-        gameState.blackHoles.push(new BlackHole());
-    }
-    
-    gameState.stardusts = gameState.stardusts.filter(stardust => {
-        stardust.update();
+        ctx.clearRect(0, 0, GAME_CONFIG.canvasWidth, GAME_CONFIG.canvasHeight);
         
-        if (stardust.checkCollision(gameState.shipX, gameState.shipY)) {
-            let points = 0;
-            let particleColor = stardust.color;
+        if (Math.random() < GAME_CONFIG.spawnRate) {
+            gameState.stardusts.push(new Stardust());
+        }
+        
+        if (Math.random() < GAME_CONFIG.blackHoleSpawnRate) {
+            gameState.blackHoles.push(new BlackHole());
+        }
+        
+        if (gameState.timeLeft < 20 && Math.random() < 0.005) {
+            gameState.blackHoles.push(new BlackHole());
+        }
+        
+        gameState.stardusts = gameState.stardusts.filter(stardust => {
+            stardust.update();
             
-            switch(stardust.type) {
-                case 'pink':
-                    points = SCORE_CONFIG.pink;
-                    break;
-                case 'green':
-                    points = SCORE_CONFIG.green;
-                    break;
-                case 'rainbow':
-                    points = SCORE_CONFIG.rainbow;
-                    particleColor = '#ffffff';
-                    break;
+            if (stardust.checkCollision(gameState.shipX, gameState.shipY)) {
+                let points = 0;
+                let particleColor = stardust.color;
+                
+                switch(stardust.type) {
+                    case 'pink':
+                        points = SCORE_CONFIG.pink;
+                        break;
+                    case 'green':
+                        points = SCORE_CONFIG.green;
+                        break;
+                    case 'rainbow':
+                        points = SCORE_CONFIG.rainbow;
+                        particleColor = '#ffffff';
+                        break;
+                }
+                
+                gameState.score += points;
+                updateScore();
+                playCollectSound(stardust.type);
+                createParticleExplosion(stardust.x, stardust.y, particleColor, 15);
+                
+                return false;
             }
             
-            gameState.score += points;
-            updateScore();
-            playCollectSound(stardust.type);
-            createParticleExplosion(stardust.x, stardust.y, particleColor, 15);
+            if (stardust.isOffScreen()) {
+                return false;
+            }
             
-            return false;
-        }
+            stardust.draw();
+            return true;
+        });
         
-        if (stardust.isOffScreen()) {
-            return false;
-        }
-        
-        stardust.draw();
-        return true;
-    });
-    
-    gameState.blackHoles = gameState.blackHoles.filter(blackHole => {
-        blackHole.update();
-        
-        if (blackHole.checkCollision(gameState.shipX, gameState.shipY)) {
-            gameState.score += SCORE_CONFIG.blackHole;
-            if (gameState.score < 0) gameState.score = 0;
-            updateScore();
-            playBlackHoleSound();
-            createParticleExplosion(blackHole.x, blackHole.y, '#4a0080', 30);
+        gameState.blackHoles = gameState.blackHoles.filter(blackHole => {
+            blackHole.update();
             
-            return false;
-        }
+            if (blackHole.checkCollision(gameState.shipX, gameState.shipY)) {
+                gameState.score += SCORE_CONFIG.blackHole;
+                if (gameState.score < 0) gameState.score = 0;
+                updateScore();
+                playBlackHoleSound();
+                createParticleExplosion(blackHole.x, blackHole.y, '#4a0080', 30);
+                
+                return false;
+            }
+            
+            if (blackHole.isOffScreen()) {
+                return false;
+            }
+            
+            blackHole.draw();
+            return true;
+        });
         
-        if (blackHole.isOffScreen()) {
-            return false;
-        }
+        gameState.particles = gameState.particles.filter(particle => {
+            particle.update();
+            if (particle.isDead()) {
+                return false;
+            }
+            particle.draw();
+            return true;
+        });
         
-        blackHole.draw();
-        return true;
-    });
-    
-    gameState.particles = gameState.particles.filter(particle => {
-        particle.update();
-        if (particle.isDead()) {
-            return false;
-        }
-        particle.draw();
-        return true;
-    });
-    
-    drawShip(gameState.shipX, gameState.shipY);
-    
-    gameState.animationId = requestAnimationFrame(gameLoop);
-}
+        drawShip(gameState.shipX, gameState.shipY);
+        
+        gameState.animationId = requestAnimationFrame(gameLoop);
+    }
 
-// 更新分数显示
-function updateScore() {
-    scoreDisplay.textContent = gameState.score;
-    scoreDisplay.style.transform = 'scale(1.2)';
-    setTimeout(() => {
-        scoreDisplay.style.transform = 'scale(1)';
-    }, 200);
-}
-
-// 更新计时器
-function updateTimer() {
-    gameState.timeLeft--;
-    timerDisplay.textContent = gameState.timeLeft;
-    
-    if (gameState.timeLeft <= 10) {
-        timerDisplay.style.color = '#ff6b6b';
-        
-        if (gameState.timeLeft <= 5 && window.GameSounds) {
-            window.GameSounds.playWarningSound();
+    // 更新分数显示
+    function updateScore() {
+        if (scoreDisplay) {
+            scoreDisplay.textContent = gameState.score;
+            scoreDisplay.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                scoreDisplay.style.transform = 'scale(1)';
+            }, 200);
         }
     }
-    
-    if (gameState.timeLeft <= 0) {
-        endGame();
-    }
-}
 
-// 开始游戏
-async function startGame() {
-    await checkGameStatus();
-    
-    // 增加总游戏次数
-    gameState.totalPlaysToday = incrementTotalPlays(gameState.playerIP);
-    
-    // 重置游戏状态
-    gameState = {
-        ...gameState,
-        isPlaying: true,
-        score: 0,
-        timeLeft: GAME_CONFIG.duration,
-        shipX: GAME_CONFIG.canvasWidth / 2,
-        shipY: GAME_CONFIG.canvasHeight - 100,
-        stardusts: [],
-        blackHoles: [],
-        particles: [],
-        animationId: null,
-        timerId: null
+    // 更新计时器
+    function updateTimer() {
+        gameState.timeLeft--;
+        if (timerDisplay) {
+            timerDisplay.textContent = gameState.timeLeft;
+            
+            if (gameState.timeLeft <= 10) {
+                timerDisplay.style.color = '#ff6b6b';
+                
+                if (gameState.timeLeft <= 5 && window.GameSounds) {
+                    window.GameSounds.playWarningSound();
+                }
+            }
+        }
+        
+        if (gameState.timeLeft <= 0) {
+            endGame();
+        }
+    }
+
+    // 开始游戏
+    async function startGame() {
+        await checkGameStatus();
+        
+        gameState.totalPlaysToday = incrementTotalPlays(gameState.playerIP);
+        
+        gameState = {
+            ...gameState,
+            isPlaying: true,
+            score: 0,
+            timeLeft: GAME_CONFIG.duration,
+            shipX: GAME_CONFIG.canvasWidth / 2,
+            shipY: GAME_CONFIG.canvasHeight - 100,
+            stardusts: [],
+            blackHoles: [],
+            particles: [],
+            animationId: null,
+            timerId: null
+        };
+        
+        updateScore();
+        if (timerDisplay) {
+            timerDisplay.textContent = gameState.timeLeft;
+            timerDisplay.style.color = 'white';
+        }
+        
+        if (startScreen) startScreen.style.display = 'none';
+        if (endScreen) endScreen.style.display = 'none';
+        
+        gameState.timerId = setInterval(updateTimer, 1000);
+        gameLoop();
+    }
+
+    // 接受奖励
+    window.acceptReward = async function(levelName) {
+        gameState.todayRewardPlays = incrementRewardPlays(gameState.playerIP);
+        
+        const level = REWARD_LEVELS.find(l => l.name === levelName);
+        const code = await getRedeemCode(level);
+        
+        const rewardChoice = document.getElementById('rewardChoice');
+        if (rewardChoice) {
+            rewardChoice.style.display = 'none';
+        }
+        
+        if (code) {
+            if (codeText) codeText.value = code;
+            if (rewardCode) rewardCode.style.display = 'block';
+            if (noStock) noStock.style.display = 'none';
+        } else {
+            if (rewardCode) rewardCode.style.display = 'none';
+            if (noStock) noStock.style.display = 'block';
+        }
+        
+        updatePlayAgainButton();
     };
-    
-    updateScore();
-    timerDisplay.textContent = gameState.timeLeft;
-    timerDisplay.style.color = 'white';
-    
-    startScreen.style.display = 'none';
-    endScreen.style.display = 'none';
-    
-    gameState.timerId = setInterval(updateTimer, 1000);
-    gameLoop();
-}
 
-// 结束游戏
-async function endGame() {
-    gameState.isPlaying = false;
-    
-    if (gameState.animationId) {
-        cancelAnimationFrame(gameState.animationId);
+    // 跳过奖励
+    window.skipReward = function() {
+        gameState.todayRewardPlays = incrementRewardPlays(gameState.playerIP);
+        
+        const rewardChoice = document.getElementById('rewardChoice');
+        if (rewardChoice) {
+            rewardChoice.innerHTML = `
+                <div class="skipped-reward">
+                    <p>您已跳过本次奖励</p>
+                </div>
+            `;
+        }
+        
+        updatePlayAgainButton();
+    };
+
+    // 更新再玩一次按钮
+    function updatePlayAgainButton() {
+        gameState.canGetReward = gameState.todayRewardPlays < GAME_CONFIG.rewardPlayLimit;
+        
+        let playAgainText = document.getElementById('playAgainText');
+        if (!playAgainText && playAgainBtn) {
+            playAgainText = document.createElement('div');
+            playAgainText.id = 'playAgainText';
+            playAgainText.className = 'play-again-text';
+            playAgainBtn.parentNode.insertBefore(playAgainText, playAgainBtn);
+        }
+        
+        if (playAgainText) {
+            if (gameState.canGetReward) {
+                const remaining = GAME_CONFIG.rewardPlayLimit - gameState.todayRewardPlays;
+                playAgainText.innerHTML = `剩余奖励次数：${remaining}`;
+            } else {
+                playAgainText.innerHTML = `练习模式（无奖励）`;
+            }
+        }
+        
+        if (playAgainBtn) {
+            playAgainBtn.disabled = false;
+            playAgainBtn.style.opacity = '1';
+        }
     }
-    if (gameState.timerId) {
-        clearInterval(gameState.timerId);
-    }
-    
-    // 检查是否破纪录
-    const isNewRecord = saveHighScore(gameState.score);
-    
-    if (window.GameSounds) {
-        window.GameSounds.playGameOverSound();
+
+    // 结束游戏
+    async function endGame() {
+        gameState.isPlaying = false;
+        
+        if (gameState.animationId) {
+            cancelAnimationFrame(gameState.animationId);
+        }
+        if (gameState.timerId) {
+            clearInterval(gameState.timerId);
+        }
+        
+        const isNewRecord = saveHighScore(gameState.score);
+        
+        if (window.GameSounds) {
+            window.GameSounds.playGameOverSound();
+            
+            if (gameState.score >= 1000 || isNewRecord) {
+                setTimeout(() => {
+                    window.GameSounds.playSuccessSound();
+                }, 500);
+            }
+        }
+        
+        if (finalScoreDisplay) {
+            finalScoreDisplay.textContent = gameState.score;
+        }
+        
+        let recordDisplay = document.getElementById('recordDisplay');
+        if (!recordDisplay) {
+            recordDisplay = document.createElement('div');
+            recordDisplay.id = 'recordDisplay';
+            const finalScoreDiv = document.querySelector('.final-score');
+            if (finalScoreDiv) {
+                finalScoreDiv.appendChild(recordDisplay);
+            }
+        }
+        
+        if (recordDisplay) {
+            if (isNewRecord) {
+                recordDisplay.innerHTML = '<div class="new-record">🎉 新纪录！</div>';
+            } else {
+                recordDisplay.innerHTML = `<div class="best-record">最高纪录: ${gameState.highScore}</div>`;
+            }
+        }
+        
+        if (gameState.canGetReward && rewardSection) {
+            const level = REWARD_LEVELS.find(l => gameState.score >= l.min && gameState.score <= l.max);
+            
+            if (level) {
+                if (rewardLevel) {
+                    rewardLevel.textContent = `🏆 ${level.name}`;
+                }
+                
+                let rewardChoice = document.getElementById('rewardChoice');
+                if (!rewardChoice) {
+                    rewardChoice = document.createElement('div');
+                    rewardChoice.id = 'rewardChoice';
+                    rewardChoice.className = 'reward-choice';
+                    rewardSection.appendChild(rewardChoice);
+                }
+                
+                rewardChoice.innerHTML = `
+                    <p>您有资格获得奖励，是否领取？</p>
+                    <div class="choice-buttons">
+                        <button class="choice-btn accept" onclick="acceptReward('${level.name}')">领取奖励</button>
+                        <button class="choice-btn skip" onclick="skipReward()">跳过</button>
+                    </div>
+                    <p class="choice-hint">选择跳过也会消耗奖励次数</p>
+                `;
+                
+                if (rewardCode) rewardCode.style.display = 'none';
+                if (noStock) noStock.style.display = 'none';
+            }
+        } else if (rewardSection) {
+            rewardSection.innerHTML = `
+                <div class="practice-mode">
+                    <h3>练习模式</h3>
+                    <p>今日奖励次数已用完</p>
+                    <p>继续练习，挑战更高分数！</p>
+                </div>
+            `;
+        }
+        
+        if (endScreen) {
+            endScreen.style.display = 'flex';
+        }
         
         if (gameState.score >= 1000 || isNewRecord) {
+            createCelebration();
+        }
+    }
+
+    // 获取兑换码
+    async function getRedeemCode(level) {
+        try {
+            const response = await fetch(`${JSONBIN_CONFIG.apiUrl}${JSONBIN_CONFIG.binId}/latest`, {
+                headers: {
+                    'X-Master-Key': JSONBIN_CONFIG.apiKey
+                }
+            });
+            
+            if (!response.ok) {
+                console.error('Failed to fetch codes');
+                return null;
+            }
+            
+            const data = await response.json();
+            const codes = data.record.codes || [];
+            
+            const availableCode = codes.find(code => 
+                code.level === level.name && !code.used
+            );
+            
+            if (!availableCode) {
+                return null;
+            }
+            
+            availableCode.used = true;
+            availableCode.usedAt = new Date().toISOString();
+            
+            await fetch(`${JSONBIN_CONFIG.apiUrl}${JSONBIN_CONFIG.binId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_CONFIG.apiKey
+                },
+                body: JSON.stringify({ codes })
+            });
+            
+            return availableCode.code;
+        } catch (error) {
+            console.error('Error getting redeem code:', error);
+            return null;
+        }
+    }
+
+    // 创建庆祝效果
+    function createCelebration() {
+        const particlesContainer = document.getElementById('particles');
+        if (!particlesContainer) return;
+        
+        for (let i = 0; i < 50; i++) {
             setTimeout(() => {
-                window.GameSounds.playSuccessSound();
-            }, 500);
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                particle.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
+                particle.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
+                
+                particlesContainer.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 1000);
+            }, i * 20);
         }
     }
-    
-    finalScoreDisplay.textContent = gameState.score;
-    
-    // 显示是否破纪录
-    let recordDisplay = document.getElementById('recordDisplay');
-    if (!recordDisplay) {
-        recordDisplay = document.createElement('div');
-        recordDisplay.id = 'recordDisplay';
-        const finalScoreDiv = document.querySelector('.final-score');
-        finalScoreDiv.appendChild(recordDisplay);
-    }
-    
-    if (isNewRecord) {
-        recordDisplay.innerHTML = '<div class="new-record">🎉 新纪录！</div>';
-    } else {
-        recordDisplay.innerHTML = `<div class="best-record">最高纪录: ${gameState.highScore}</div>`;
-    }
-    
-    // 处理奖励
-    if (gameState.canGetReward) {
-        const level = REWARD_LEVELS.find(l => gameState.score >= l.min && gameState.score <= l.max);
-        
-        if (level) {
-            rewardLevel.textContent = `🏆 ${level.name}`;
+
+    // 复制兑换码
+    function copyCode() {
+        if (codeText) {
+            codeText.select();
+            document.execCommand('copy');
             
-            // 显示选择按钮
-            let rewardChoice = document.getElementById('rewardChoice');
-            if (!rewardChoice) {
-                rewardChoice = document.createElement('div');
-                rewardChoice.id = 'rewardChoice';
-                rewardChoice.className = 'reward-choice';
-                rewardSection.appendChild(rewardChoice);
+            if (copyBtn) {
+                copyBtn.textContent = '已复制！';
+                copyBtn.style.background = 'linear-gradient(45deg, #00ff00, #00cc00)';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = '复制';
+                }, 2000);
             }
-            
-            rewardChoice.innerHTML = `
-                <p>您有资格获得奖励，是否领取？</p>
-                <div class="choice-buttons">
-                    <button class="choice-btn accept" onclick="acceptReward('${level.name}')">领取奖励</button>
-                    <button class="choice-btn skip" onclick="skipReward()">跳过</button>
-                </div>
-                <p class="choice-hint">选择跳过也会消耗奖励次数</p>
-            `;
-            
-            rewardCode.style.display = 'none';
-            noStock.style.display = 'none';
         }
-    } else {
-        // 练习模式，不显示奖励
-        rewardSection.innerHTML = `
-            <div class="practice-mode">
-                <h3>练习模式</h3>
-                <p>今日奖励次数已用完</p>
-                <p>继续练习，挑战更高分数！</p>
-            </div>
-        `;
     }
-    
-    endScreen.style.display = 'flex';
-    
-    if (gameState.score >= 1000 || isNewRecord) {
-        createCelebration();
-    }
-}
 
-// 接受奖励
-async function acceptReward(levelName) {
-    // 增加奖励游戏次数
-    gameState.todayRewardPlays = incrementRewardPlays(gameState.playerIP);
-    
-    const level = REWARD_LEVELS.find(l => l.name === levelName);
-    const code = await getRedeemCode(level);
-    
-    document.getElementById('rewardChoice').style.display = 'none';
-    
-    if (code) {
-        codeText.value = code;
-        rewardCode.style.display = 'block';
-        noStock.style.display = 'none';
-    } else {
-        rewardCode.style.display = 'none';
-        noStock.style.display = 'block';
-    }
-    
-    updatePlayAgainButton();
-}
-
-// 跳过奖励
-function skipReward() {
-    // 增加奖励游戏次数（即使跳过也算使用）
-    gameState.todayRewardPlays = incrementRewardPlays(gameState.playerIP);
-    
-    document.getElementById('rewardChoice').innerHTML = `
-        <div class="skipped-reward">
-            <p>您已跳过本次奖励</p>
-        </div>
-    `;
-    
-    updatePlayAgainButton();
-}
-
-// 更新再玩一次按钮
-function updatePlayAgainButton() {
-    gameState.canGetReward = gameState.todayRewardPlays < GAME_CONFIG.rewardPlayLimit;
-    
-    let playAgainText = document.getElementById('playAgainText');
-    if (!playAgainText) {
-        playAgainText = document.createElement('div');
-        playAgainText.id = 'playAgainText';
-        playAgainText.className = 'play-again-text';
-        playAgainBtn.parentNode.insertBefore(playAgainText, playAgainBtn);
-    }
-    
-    if (gameState.canGetReward) {
-        const remaining = GAME_CONFIG.rewardPlayLimit - gameState.todayRewardPlays;
-        playAgainText.innerHTML = `剩余奖励次数：${remaining}`;
-    } else {
-        playAgainText.innerHTML = `练习模式（无奖励）`;
-    }
-    
-    playAgainBtn.disabled = false;
-    playAgainBtn.style.opacity = '1';
-}
-
-// 获取兑换码
-async function getRedeemCode(level) {
-    try {
-        const response = await fetch(`${JSONBIN_CONFIG.apiUrl}${JSONBIN_CONFIG.binId}/latest`, {
-            headers: {
-                'X-Master-Key': JSONBIN_CONFIG.apiKey
-            }
-        });
+    // 鼠标移动事件
+    function handleMouseMove(e) {
+        if (!gameState.isPlaying) return;
         
-        if (!response.ok) {
-            console.error('Failed to fetch codes');
-            return null;
+        const rect = canvas.getBoundingClientRect();
+        gameState.shipX = e.clientX - rect.left;
+        gameState.shipY = e.clientY - rect.top;
+    }
+
+    // 触摸移动事件
+    function handleTouchMove(e) {
+        if (!gameState.isPlaying) return;
+        
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        
+        gameState.shipX = touch.clientX - rect.left;
+        gameState.shipY = touch.clientY - rect.top - GAME_CONFIG.touchOffset;
+    }
+
+    // 窗口大小改变
+    function handleResize() {
+        initCanvas();
+    }
+
+    // 初始化事件监听
+    function initEventListeners() {
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                if (window.GameSounds) {
+                    window.GameSounds.playClickSound();
+                }
+                startGame();
+            });
         }
         
-        const data = await response.json();
-        const codes = data.record.codes || [];
-        
-        const availableCode = codes.find(code => 
-            code.level === level.name && !code.used
-        );
-        
-        if (!availableCode) {
-            return null;
+        if (playAgainBtn) {
+            playAgainBtn.addEventListener('click', () => {
+                if (window.GameSounds) {
+                    window.GameSounds.playClickSound();
+                }
+                startGame();
+            });
         }
         
-        availableCode.used = true;
-        availableCode.usedAt = new Date().toISOString();
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                if (window.GameSounds) {
+                    window.GameSounds.playClickSound();
+                }
+                copyCode();
+            });
+        }
         
-        await fetch(`${JSONBIN_CONFIG.apiUrl}${JSONBIN_CONFIG.binId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Master-Key': JSONBIN_CONFIG.apiKey
-            },
-            body: JSON.stringify({ codes })
-        });
+        if (canvas) {
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+        }
         
-        return availableCode.code;
-    } catch (error) {
-        console.error('Error getting redeem code:', error);
-        return null;
+        window.addEventListener('resize', handleResize);
+        
+        document.addEventListener('contextmenu', e => e.preventDefault());
     }
-}
 
-// 创建庆祝效果
-function createCelebration() {
-    const particlesContainer = document.getElementById('particles');
-    
-    for (let i = 0; i < 50; i++) {
-        setTimeout(() => {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.top = Math.random() * 100 + '%';
-            particle.style.background = `hsl(${Math.random() * 360}, 100%, 50%)`;
-            particle.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
-            particle.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
-            
-            particlesContainer.appendChild(particle);
-            
-            setTimeout(() => particle.remove(), 1000);
-        }, i * 20);
+    // 初始化游戏
+    async function init() {
+        initCanvas();
+        initEventListeners();
+        
+        await checkGameStatus();
+        
+        if (!window.GameSounds) {
+            const script = document.createElement('script');
+            script.src = 'js/sounds.js';
+            document.head.appendChild(script);
+        }
     }
-}
 
-// 复制兑换码
-function copyCode() {
-    codeText.select();
-    document.execCommand('copy');
-    
-    copyBtn.textContent = '已复制！';
-    copyBtn.style.background = 'linear-gradient(45deg, #00ff00, #00cc00)';
-    
-    setTimeout(() => {
-        copyBtn.textContent = '复制';
-    }, 2000);
-}
-
-// 鼠标移动事件
-function handleMouseMove(e) {
-    if (!gameState.isPlaying) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    gameState.shipX = e.clientX - rect.left;
-    gameState.shipY = e.clientY - rect.top;
-}
-
-// 触摸移动事件
-function handleTouchMove(e) {
-    if (!gameState.isPlaying) return;
-    
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    
-    gameState.shipX = touch.clientX - rect.left;
-    gameState.shipY = touch.clientY - rect.top - GAME_CONFIG.touchOffset;
-}
-
-// 窗口大小改变
-function handleResize() {
-    initCanvas();
-}
-
-// 初始化事件监听
-function initEventListeners() {
-    startBtn.addEventListener('click', () => {
-        if (window.GameSounds) {
-            window.GameSounds.playClickSound();
-        }
-        startGame();
-    });
-    
-    playAgainBtn.addEventListener('click', () => {
-        if (window.GameSounds) {
-            window.GameSounds.playClickSound();
-        }
-        startGame();
-    });
-    
-    copyBtn.addEventListener('click', () => {
-        if (window.GameSounds) {
-            window.GameSounds.playClickSound();
-        }
-        copyCode();
-    });
-    
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
-    
-    window.addEventListener('resize', handleResize);
-    
-    document.addEventListener('contextmenu', e => e.preventDefault());
-}
-
-// 初始化游戏
-async function init() {
-    initCanvas();
-    initEventListeners();
-    
-    await checkGameStatus();
-    
-    if (!window.GameSounds) {
-        const script = document.createElement('script');
-        script.src = 'js/sounds.js';
-        document.head.appendChild(script);
-    }
-}
-
-// 页面加载完成后初始化
-window.addEventListener('DOMContentLoaded', init);
-
-// 暴露给全局的函数
-window.acceptReward = acceptReward;
-window.skipReward = skipReward;
+    // 初始化
+    init();
+});
