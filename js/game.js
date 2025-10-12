@@ -9,7 +9,7 @@ const GAME_CONFIG = {
     stardustSpeed: 7,
     blackHoleSpeed: 10,
     spawnRate: 0.15,
-    blackHoleSpawnRate: 0.17,
+    blackHoleSpawnRate: 0.018,
     touchOffset: 50,
     rewardPlayLimit: 3 // 可获得奖励的游戏次数
 };
@@ -31,7 +31,7 @@ const REWARD_LEVELS = [
     { min: 2000, max: Infinity, name: '星钻奖励', value: '100元兑换码' }
 ];
 
-// JSONBin配置
+// JSONBin配置（兑换码）
 const JSONBIN_CONFIG = {
     binId: '68ea90cdae596e708f0eb402',
     apiKey: '$2a$10$jm/VPb/omDLo8u4selSVL.VShILiV2Y2q5SZSDfB9yn3F5b6sgjT6',
@@ -78,6 +78,144 @@ window.addEventListener('DOMContentLoaded', function() {
     const startBtn = document.getElementById('startBtn');
     const playAgainBtn = document.getElementById('playAgainBtn');
     const copyBtn = document.getElementById('copyBtn');
+    
+    // 昵称相关元素
+    const nicknameSection = document.getElementById('nicknameSection');
+    const gameContent = document.getElementById('gameContent');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const confirmNickname = document.getElementById('confirmNickname');
+    const nicknameError = document.getElementById('nicknameError');
+    const playerName = document.getElementById('playerName');
+    const changeNickname = document.getElementById('changeNickname');
+    
+    // 排行榜相关元素
+    const showLeaderboard = document.getElementById('showLeaderboard');
+    const leaderboardScreen = document.getElementById('leaderboard-screen');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const closeLeaderboard = document.getElementById('closeLeaderboard');
+
+    // 初始化昵称
+    function initNickname() {
+        const savedNickname = window.leaderboardManager.getNickname();
+        if (savedNickname) {
+            showGameContent(savedNickname);
+        } else {
+            nicknameSection.style.display = 'block';
+            gameContent.style.display = 'none';
+        }
+    }
+
+    // 显示游戏内容
+    function showGameContent(nickname) {
+        nicknameSection.style.display = 'none';
+        gameContent.style.display = 'block';
+        if (playerName) {
+            playerName.textContent = nickname;
+        }
+    }
+
+    // 确认昵称
+    if (confirmNickname) {
+        confirmNickname.addEventListener('click', () => {
+            const nickname = nicknameInput.value;
+            const result = window.leaderboardManager.setNickname(nickname);
+            
+            if (result.success) {
+                nicknameError.textContent = '';
+                showGameContent(window.leaderboardManager.getNickname());
+            } else {
+                nicknameError.textContent = result.error;
+            }
+        });
+    }
+
+    // 输入框回车确认
+    if (nicknameInput) {
+        nicknameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                confirmNickname.click();
+            }
+        });
+    }
+
+    // 更改昵称
+    if (changeNickname) {
+        changeNickname.addEventListener('click', () => {
+            window.leaderboardManager.clearNickname();
+            nicknameSection.style.display = 'block';
+            gameContent.style.display = 'none';
+            nicknameInput.value = '';
+            nicknameError.textContent = '';
+        });
+    }
+
+    // 显示排行榜
+    if (showLeaderboard) {
+        showLeaderboard.addEventListener('click', async () => {
+            await displayLeaderboard();
+        });
+    }
+
+    // 关闭排行榜
+    if (closeLeaderboard) {
+        closeLeaderboard.addEventListener('click', () => {
+            leaderboardScreen.style.display = 'none';
+        });
+    }
+
+    // 显示排行榜函数
+    async function displayLeaderboard() {
+        leaderboardScreen.style.display = 'flex';
+        leaderboardList.innerHTML = '<div class="leaderboard-empty">加载中...</div>';
+        
+        await window.leaderboardManager.loadLeaderboard();
+        const formattedLeaderboard = window.leaderboardManager.formatLeaderboard();
+        
+        if (formattedLeaderboard.length === 0) {
+            leaderboardList.innerHTML = '<div class="leaderboard-empty">暂无排行数据</div>';
+            return;
+        }
+        
+        leaderboardList.innerHTML = formattedLeaderboard.map(entry => {
+            let classes = 'leaderboard-item';
+            let rankClass = '';
+            
+            if (entry.rank === 1) {
+                classes += ' top1';
+                rankClass = 'top1';
+            } else if (entry.rank === 2) {
+                classes += ' top2';
+                rankClass = 'top2';
+            } else if (entry.rank === 3) {
+                classes += ' top3';
+                rankClass = 'top3';
+            }
+            
+            if (entry.isCurrentPlayer) {
+                classes += ' current-player';
+            }
+            
+            return `
+                <div class="${classes}">
+                    <div class="rank-number ${rankClass}">${entry.rank}</div>
+                    <div class="player-nickname">${entry.nickname}</div>
+                    <div class="player-score">${entry.score}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // 显示排名通知
+    function showRankNotification(rank) {
+        const notification = document.createElement('div');
+        notification.className = 'rank-notification';
+        notification.innerHTML = `🎉 恭喜！您进入了第 ${rank} 名！`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
 
     // 获取玩家IP
     async function getPlayerIP() {
@@ -187,9 +325,9 @@ window.addEventListener('DOMContentLoaded', function() {
             highScoreDisplay = document.createElement('div');
             highScoreDisplay.id = 'highScoreDisplay';
             highScoreDisplay.className = 'high-score-display';
-            const mainPanel = document.querySelector('.main-panel');
-            if (mainPanel && document.querySelector('.rules')) {
-                mainPanel.insertBefore(highScoreDisplay, document.querySelector('.rules'));
+            const gameContentDiv = document.getElementById('gameContent');
+            if (gameContentDiv && document.querySelector('.rules')) {
+                gameContentDiv.insertBefore(highScoreDisplay, document.querySelector('.rules'));
             }
         }
         if (highScoreDisplay) {
@@ -205,9 +343,9 @@ window.addEventListener('DOMContentLoaded', function() {
             limitInfo = document.createElement('div');
             limitInfo.id = 'playLimitInfo';
             limitInfo.className = 'play-limit-info';
-            const mainPanel = document.querySelector('.main-panel');
-            if (mainPanel && startBtn) {
-                mainPanel.insertBefore(limitInfo, startBtn);
+            const gameContentDiv = document.getElementById('gameContent');
+            if (gameContentDiv && startBtn) {
+                gameContentDiv.insertBefore(limitInfo, startBtn);
             }
         }
         
@@ -611,6 +749,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // 开始游戏
     async function startGame() {
+        // 检查是否有昵称
+        if (!window.leaderboardManager.getNickname()) {
+            alert('请先设置昵称！');
+            return;
+        }
+        
         await checkGameStatus();
         
         gameState.totalPlaysToday = incrementTotalPlays(gameState.playerIP);
@@ -720,12 +864,16 @@ window.addEventListener('DOMContentLoaded', function() {
             clearInterval(gameState.timerId);
         }
         
+        // 提交分数到排行榜
+        const leaderboardResult = await window.leaderboardManager.submitScore(gameState.score);
+        
+        // 检查是否破纪录
         const isNewRecord = saveHighScore(gameState.score);
         
         if (window.GameSounds) {
             window.GameSounds.playGameOverSound();
             
-            if (gameState.score >= 1000 || isNewRecord) {
+            if (gameState.score >= 1000 || isNewRecord || (leaderboardResult && leaderboardResult.isTopTen)) {
                 setTimeout(() => {
                     window.GameSounds.playSuccessSound();
                 }, 500);
@@ -736,6 +884,12 @@ window.addEventListener('DOMContentLoaded', function() {
             finalScoreDisplay.textContent = gameState.score;
         }
         
+        // 显示排名信息
+        if (leaderboardResult && leaderboardResult.isTopTen) {
+            showRankNotification(leaderboardResult.rank);
+        }
+        
+        // 显示是否破纪录
         let recordDisplay = document.getElementById('recordDisplay');
         if (!recordDisplay) {
             recordDisplay = document.createElement('div');
@@ -752,8 +906,14 @@ window.addEventListener('DOMContentLoaded', function() {
             } else {
                 recordDisplay.innerHTML = `<div class="best-record">最高纪录: ${gameState.highScore}</div>`;
             }
+            
+            // 添加排行榜排名显示
+            if (leaderboardResult && leaderboardResult.rank) {
+                recordDisplay.innerHTML += `<div class="leaderboard-rank">排行榜第 ${leaderboardResult.rank} 名</div>`;
+            }
         }
         
+        // 处理奖励
         if (gameState.canGetReward && rewardSection) {
             const level = REWARD_LEVELS.find(l => gameState.score >= l.min && gameState.score <= l.max);
             
@@ -796,7 +956,7 @@ window.addEventListener('DOMContentLoaded', function() {
             endScreen.style.display = 'flex';
         }
         
-        if (gameState.score >= 1000 || isNewRecord) {
+        if (gameState.score >= 1000 || isNewRecord || (leaderboardResult && leaderboardResult.isTopTen)) {
             createCelebration();
         }
     }
@@ -954,6 +1114,7 @@ window.addEventListener('DOMContentLoaded', function() {
     async function init() {
         initCanvas();
         initEventListeners();
+        initNickname();
         
         await checkGameStatus();
         
