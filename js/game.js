@@ -78,6 +78,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const startBtn = document.getElementById('startBtn');
     const playAgainBtn = document.getElementById('playAgainBtn');
     const copyBtn = document.getElementById('copyBtn');
+    const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
     
     // 昵称相关元素
     const nicknameSection = document.getElementById('nicknameSection');
@@ -160,6 +161,21 @@ window.addEventListener('DOMContentLoaded', function() {
     if (closeLeaderboard) {
         closeLeaderboard.addEventListener('click', () => {
             leaderboardScreen.style.display = 'none';
+            
+            // 判断应该显示哪个界面
+            if (gameState.isPlaying) {
+                // 游戏进行中不应该发生，但以防万一
+            } else if (finalScoreDisplay && finalScoreDisplay.textContent !== '0') {
+                // 如果有最终分数，说明是从结束界面进入的
+                if (endScreen) {
+                    endScreen.style.display = 'flex';
+                }
+            } else {
+                // 否则返回开始界面
+                if (startScreen) {
+                    startScreen.style.display = 'flex';
+                }
+            }
         });
     }
 
@@ -835,7 +851,7 @@ window.addEventListener('DOMContentLoaded', function() {
             playAgainText = document.createElement('div');
             playAgainText.id = 'playAgainText';
             playAgainText.className = 'play-again-text';
-            playAgainBtn.parentNode.insertBefore(playAgainText, playAgainBtn);
+            playAgainBtn.parentNode.insertBefore(playAgainText, playAgainBtn.parentNode.querySelector('.end-buttons'));
         }
         
         if (playAgainText) {
@@ -901,16 +917,19 @@ window.addEventListener('DOMContentLoaded', function() {
         }
         
         if (recordDisplay) {
+            let displayHTML = '';
             if (isNewRecord) {
-                recordDisplay.innerHTML = '<div class="new-record">🎉 新纪录！</div>';
+                displayHTML = '<div class="new-record">🎉 新纪录！</div>';
             } else {
-                recordDisplay.innerHTML = `<div class="best-record">最高纪录: ${gameState.highScore}</div>`;
+                displayHTML = `<div class="best-record">最高纪录: ${gameState.highScore}</div>`;
             }
             
             // 添加排行榜排名显示
             if (leaderboardResult && leaderboardResult.rank) {
-                recordDisplay.innerHTML += `<div class="leaderboard-rank">排行榜第 ${leaderboardResult.rank} 名</div>`;
+                displayHTML += `<div class="leaderboard-rank">排行榜第 ${leaderboardResult.rank} 名</div>`;
             }
+            
+            recordDisplay.innerHTML = displayHTML;
         }
         
         // 处理奖励
@@ -1039,6 +1058,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 
                 setTimeout(() => {
                     copyBtn.textContent = '复制';
+                    copyBtn.style.background = '';
                 }, 2000);
             }
         }
@@ -1096,6 +1116,21 @@ window.addEventListener('DOMContentLoaded', function() {
                     window.GameSounds.playClickSound();
                 }
                 copyCode();
+            });
+        }
+        
+        // 查看排行榜按钮（结束界面）
+        if (viewLeaderboardBtn) {
+            viewLeaderboardBtn.addEventListener('click', async () => {
+                if (window.GameSounds) {
+                    window.GameSounds.playClickSound();
+                }
+                // 隐藏结束界面
+                if (endScreen) {
+                    endScreen.style.display = 'none';
+                }
+                // 显示排行榜
+                await displayLeaderboard();
             });
         }
         
