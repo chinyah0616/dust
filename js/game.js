@@ -5,21 +5,21 @@ const GAME_CONFIG = {
     canvasHeight: 0,
     shipSize: 40,
     stardustSize: 30,
-    blackHoleSize: 60, // 黑洞尺寸
-    stardustSpeed: 6, // 星尘速度
-    blackHoleSpeed: 10, // 黑洞速度
-    spawnRate: 0.1, // 星尘生成率
-    blackHoleSpawnRate: 0.15, // 增加黑洞生成率
-    touchOffset: 50, // 触摸偏移量
-    dailyPlayLimit: 3 // 每日游戏次数限制
+    blackHoleSize: 55,
+    stardustSpeed: 6,
+    blackHoleSpeed: 10,
+    spawnRate: 0.1,
+    blackHoleSpawnRate: 0.15,
+    touchOffset: 50,
+    rewardPlayLimit: 3 // 可获得奖励的游戏次数
 };
 
 // 积分配置
 const SCORE_CONFIG = {
-    pink: 5,      // 粉色5分
-    green: 10,    // 绿色10分
-    rainbow: 25,  // 彩虹25分
-    blackHole: -30 // 黑洞-30分
+    pink: 5,
+    green: 10,
+    rainbow: 25,
+    blackHole: -30
 };
 
 // 奖励等级配置
@@ -33,8 +33,8 @@ const REWARD_LEVELS = [
 
 // JSONBin配置
 const JSONBIN_CONFIG = {
-    binId: '68ea90cdae596e708f0eb402', // 替换为您的JSONBin ID
-    apiKey: '$2a$10$jm/VPb/omDLo8u4selSVL.VShILiV2Y2q5SZSDfB9yn3F5b6sgjT6', // 替换为您的API密钥
+    binId: '68ea90cdae596e708f0eb402',
+    apiKey: '$2a$10$jm/VPb/omDLo8u4selSVL.VShILiV2Y2q5SZSDfB9yn3F5b6sgjT6',
     apiUrl: 'https://api.jsonbin.io/v3/b/'
 };
 
@@ -54,8 +54,10 @@ let gameState = {
     animationId: null,
     timerId: null,
     playerIP: null,
-    todayPlays: 0,
-    canPlay: true
+    todayRewardPlays: 0,
+    totalPlaysToday: 0,
+    canGetReward: true,
+    highScore: 0
 };
 
 // 获取DOM元素
@@ -83,7 +85,6 @@ async function getPlayerIP() {
         return data.ip;
     } catch (error) {
         console.error('Failed to get IP:', error);
-        // 如果获取IP失败，使用本地存储的唯一标识
         let localId = localStorage.getItem('playerLocalId');
         if (!localId) {
             localId = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -93,19 +94,52 @@ async function getPlayerIP() {
     }
 }
 
-// 获取今日游戏次数
-function getTodayPlays(ip) {
+// 获取今日奖励游戏次数
+function getTodayRewardPlays(ip) {
     const today = new Date().toDateString();
-    const storageKey = `plays_${ip}_${today}`;
+    const storageKey = `rewardPlays_${ip}_${today}`;
     const plays = localStorage.getItem(storageKey);
     return plays ? parseInt(plays) : 0;
 }
 
-// 增加游戏次数
-function incrementPlays(ip) {
+// 获取今日总游戏次数
+function getTotalPlaysToday(ip) {
     const today = new Date().toDateString();
-    const storageKey = `plays_${ip}_${today}`;
-    const currentPlays = getTodayPlays(ip);
+    const storageKey = `totalPlays_${ip}_${today}`;
+    const plays = localStorage.getItem(storageKey);
+    return plays ? parseInt(plays) : 0;
+}
+
+// 获取历史最高分
+function getHighScore() {
+    const score = localStorage.getItem('highScore');
+    return score ? parseInt(score) : 0;
+}
+
+// 保存最高分
+function saveHighScore(score) {
+    const currentHigh = getHighScore();
+    if (score > currentHigh) {
+        localStorage.setItem('highScore', score);
+        return true; // 返回true表示破纪录
+    }
+    return false;
+}
+
+// 增加奖励游戏次数
+function incrementRewardPlays(ip) {
+    const today = new Date().toDateString();
+    const storageKey = `rewardPlays_${ip}_${today}`;
+    const currentPlays = getTodayRewardPlays(ip);
+    localStorage.setItem(storageKey, currentPlays + 1);
+    return currentPlays + 1;
+}
+
+// 增加总游戏次数
+function incrementTotalPlays(ip) {
+    const today = new Date().toDateString();
+    const storageKey = `totalPlays_${ip}_${today}`;
+    const currentPlays = getTotalPlaysToday(ip);
     localStorage.setItem(storageKey, currentPlays + 1);
     return currentPlays + 1;
 }
@@ -117,7 +151,7 @@ function cleanOldPlayRecords() {
     
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('plays_') && !key.includes(today)) {
+        if (key && (key.startsWith('rewardPlays_') || key.startsWith('totalPlays_')) && !key.includes(today)) {
             keysToRemove.push(key);
         }
     }
@@ -125,31 +159,41 @@ function cleanOldPlayRecords() {
     keysToRemove.forEach(key => localStorage.removeItem(key));
 }
 
-// 检查是否可以玩游戏
-async function checkCanPlay() {
-    // 获取IP
+// 检查游戏状态
+async function checkGameStatus() {
     if (!gameState.playerIP) {
         gameState.playerIP = await getPlayerIP();
     }
     
-    // 清理旧记录
     cleanOldPlayRecords();
     
-    // 获取今日游戏次数
-    gameState.todayPlays = getTodayPlays(gameState.playerIP);
-    gameState.canPlay = gameState.todayPlays < GAME_CONFIG.dailyPlayLimit;
+    gameState.todayRewardPlays = getTodayRewardPlays(gameState.playerIP);
+    gameState.totalPlaysToday = getTotalPlaysToday(gameState.playerIP);
+    gameState.canGetReward = gameState.todayRewardPlays < GAME_CONFIG.rewardPlayLimit;
+    gameState.highScore = getHighScore();
     
-    // 更新UI显示
-    updatePlayLimitUI();
-    
-    return gameState.canPlay;
+    updatePlayStatusUI();
 }
 
-// 更新游戏次数限制UI
-function updatePlayLimitUI() {
-    const remainingPlays = GAME_CONFIG.dailyPlayLimit - gameState.todayPlays;
+// 更新游戏状态UI
+function updatePlayStatusUI() {
+    const remainingRewardPlays = GAME_CONFIG.rewardPlayLimit - gameState.todayRewardPlays;
     
-    // 在开始界面添加提示
+    // 显示最高分
+    let highScoreDisplay = document.getElementById('highScoreDisplay');
+    if (!highScoreDisplay) {
+        highScoreDisplay = document.createElement('div');
+        highScoreDisplay.id = 'highScoreDisplay';
+        highScoreDisplay.className = 'high-score-display';
+        const mainPanel = document.querySelector('.main-panel');
+        mainPanel.insertBefore(highScoreDisplay, document.querySelector('.rules'));
+    }
+    highScoreDisplay.innerHTML = `
+        <div class="high-score-label">🏆 最高纪录</div>
+        <div class="high-score-value">${gameState.highScore}</div>
+    `;
+    
+    // 显示游戏次数信息
     let limitInfo = document.getElementById('playLimitInfo');
     if (!limitInfo) {
         limitInfo = document.createElement('div');
@@ -159,25 +203,26 @@ function updatePlayLimitUI() {
         mainPanel.insertBefore(limitInfo, startBtn);
     }
     
-    if (remainingPlays > 0) {
+    if (remainingRewardPlays > 0) {
         limitInfo.innerHTML = `
             <div class="limit-display">
-                今日剩余次数：<span class="remaining-count">${remainingPlays}</span> / ${GAME_CONFIG.dailyPlayLimit}
+                🎁 可获得奖励次数：<span class="remaining-count">${remainingRewardPlays}</span> / ${GAME_CONFIG.rewardPlayLimit}
+                <div class="sub-text">用完后可继续游玩，但不再发放兑换码</div>
             </div>
         `;
-        startBtn.disabled = false;
-        startBtn.style.opacity = '1';
     } else {
         limitInfo.innerHTML = `
-            <div class="limit-display exceeded">
-                今日游戏次数已用完
-                <div class="reset-time">明日0点重置</div>
+            <div class="limit-display no-reward">
+                练习模式
+                <div class="sub-text">今日奖励次数已用完，继续游玩不会获得兑换码</div>
+                <div class="play-count">今日已玩 ${gameState.totalPlaysToday} 次</div>
             </div>
         `;
-        startBtn.disabled = true;
-        startBtn.style.opacity = '0.5';
-        startBtn.style.cursor = 'not-allowed';
     }
+    
+    // 开始按钮始终可用
+    startBtn.disabled = false;
+    startBtn.style.opacity = '1';
 }
 
 // 初始化画布
@@ -197,7 +242,6 @@ class Stardust {
         this.rotation = 0;
         this.rotationSpeed = Math.random() * 0.1 - 0.05;
         
-        // 随机类型
         const rand = Math.random();
         if (rand < 0.1) {
             this.type = 'rainbow';
@@ -254,11 +298,11 @@ class BlackHole {
     constructor() {
         this.x = Math.random() * GAME_CONFIG.canvasWidth;
         this.y = -GAME_CONFIG.blackHoleSize;
-        this.speed = GAME_CONFIG.blackHoleSpeed + Math.random() * 2; // 速度也有随机性
+        this.speed = GAME_CONFIG.blackHoleSpeed + Math.random() * 2;
         this.rotation = 0;
         this.rotationSpeed = 0.05;
         this.pulsePhase = Math.random() * Math.PI * 2;
-        this.size = GAME_CONFIG.blackHoleSize + Math.random() * 20 - 10; // 大小有变化
+        this.size = GAME_CONFIG.blackHoleSize + Math.random() * 20 - 10;
     }
     
     update() {
@@ -440,22 +484,18 @@ function gameLoop() {
     
     ctx.clearRect(0, 0, GAME_CONFIG.canvasWidth, GAME_CONFIG.canvasHeight);
     
-    // 生成新的星尘
     if (Math.random() < GAME_CONFIG.spawnRate) {
         gameState.stardusts.push(new Stardust());
     }
     
-    // 生成黑洞（增加了生成率）
     if (Math.random() < GAME_CONFIG.blackHoleSpawnRate) {
         gameState.blackHoles.push(new BlackHole());
     }
     
-    // 随着时间增加难度（10秒后增加黑洞生成）
     if (gameState.timeLeft < 20 && Math.random() < 0.005) {
         gameState.blackHoles.push(new BlackHole());
     }
     
-    // 更新和绘制星尘
     gameState.stardusts = gameState.stardusts.filter(stardust => {
         stardust.update();
         
@@ -492,7 +532,6 @@ function gameLoop() {
         return true;
     });
     
-    // 更新和绘制黑洞
     gameState.blackHoles = gameState.blackHoles.filter(blackHole => {
         blackHole.update();
         
@@ -514,7 +553,6 @@ function gameLoop() {
         return true;
     });
     
-    // 更新和绘制粒子
     gameState.particles = gameState.particles.filter(particle => {
         particle.update();
         if (particle.isDead()) {
@@ -558,19 +596,14 @@ function updateTimer() {
 
 // 开始游戏
 async function startGame() {
-    // 检查是否可以玩
-    const canPlay = await checkCanPlay();
-    if (!canPlay) {
-        alert('今日游戏次数已用完，请明日再来！');
-        return;
-    }
+    await checkGameStatus();
     
-    // 增加游戏次数
-    gameState.todayPlays = incrementPlays(gameState.playerIP);
+    // 增加总游戏次数
+    gameState.totalPlaysToday = incrementTotalPlays(gameState.playerIP);
     
     // 重置游戏状态
     gameState = {
-        ...gameState, // 保留IP和游戏次数信息
+        ...gameState,
         isPlaying: true,
         score: 0,
         timeLeft: GAME_CONFIG.duration,
@@ -605,10 +638,13 @@ async function endGame() {
         clearInterval(gameState.timerId);
     }
     
+    // 检查是否破纪录
+    const isNewRecord = saveHighScore(gameState.score);
+    
     if (window.GameSounds) {
         window.GameSounds.playGameOverSound();
         
-        if (gameState.score >= 1000) {
+        if (gameState.score >= 1000 || isNewRecord) {
             setTimeout(() => {
                 window.GameSounds.playSuccessSound();
             }, 500);
@@ -617,25 +653,107 @@ async function endGame() {
     
     finalScoreDisplay.textContent = gameState.score;
     
-    const level = REWARD_LEVELS.find(l => gameState.score >= l.min && gameState.score <= l.max);
-    
-    if (level) {
-        rewardLevel.textContent = `🏆 ${level.name}`;
-        
-        const code = await getRedeemCode(level);
-        
-        if (code) {
-            codeText.value = code;
-            rewardCode.style.display = 'block';
-            noStock.style.display = 'none';
-        } else {
-            rewardCode.style.display = 'none';
-            noStock.style.display = 'block';
-        }
+    // 显示是否破纪录
+    let recordDisplay = document.getElementById('recordDisplay');
+    if (!recordDisplay) {
+        recordDisplay = document.createElement('div');
+        recordDisplay.id = 'recordDisplay';
+        const finalScoreDiv = document.querySelector('.final-score');
+        finalScoreDiv.appendChild(recordDisplay);
     }
     
-    // 更新剩余次数显示
-    const remainingPlays = GAME_CONFIG.dailyPlayLimit - gameState.todayPlays;
+    if (isNewRecord) {
+        recordDisplay.innerHTML = '<div class="new-record">🎉 新纪录！</div>';
+    } else {
+        recordDisplay.innerHTML = `<div class="best-record">最高纪录: ${gameState.highScore}</div>`;
+    }
+    
+    // 处理奖励
+    if (gameState.canGetReward) {
+        const level = REWARD_LEVELS.find(l => gameState.score >= l.min && gameState.score <= l.max);
+        
+        if (level) {
+            rewardLevel.textContent = `🏆 ${level.name}`;
+            
+            // 显示选择按钮
+            let rewardChoice = document.getElementById('rewardChoice');
+            if (!rewardChoice) {
+                rewardChoice = document.createElement('div');
+                rewardChoice.id = 'rewardChoice';
+                rewardChoice.className = 'reward-choice';
+                rewardSection.appendChild(rewardChoice);
+            }
+            
+            rewardChoice.innerHTML = `
+                <p>您有资格获得奖励，是否领取？</p>
+                <div class="choice-buttons">
+                    <button class="choice-btn accept" onclick="acceptReward('${level.name}')">领取奖励</button>
+                    <button class="choice-btn skip" onclick="skipReward()">跳过</button>
+                </div>
+                <p class="choice-hint">选择跳过也会消耗奖励次数</p>
+            `;
+            
+            rewardCode.style.display = 'none';
+            noStock.style.display = 'none';
+        }
+    } else {
+        // 练习模式，不显示奖励
+        rewardSection.innerHTML = `
+            <div class="practice-mode">
+                <h3>练习模式</h3>
+                <p>今日奖励次数已用完</p>
+                <p>继续练习，挑战更高分数！</p>
+            </div>
+        `;
+    }
+    
+    endScreen.style.display = 'flex';
+    
+    if (gameState.score >= 1000 || isNewRecord) {
+        createCelebration();
+    }
+}
+
+// 接受奖励
+async function acceptReward(levelName) {
+    // 增加奖励游戏次数
+    gameState.todayRewardPlays = incrementRewardPlays(gameState.playerIP);
+    
+    const level = REWARD_LEVELS.find(l => l.name === levelName);
+    const code = await getRedeemCode(level);
+    
+    document.getElementById('rewardChoice').style.display = 'none';
+    
+    if (code) {
+        codeText.value = code;
+        rewardCode.style.display = 'block';
+        noStock.style.display = 'none';
+    } else {
+        rewardCode.style.display = 'none';
+        noStock.style.display = 'block';
+    }
+    
+    updatePlayAgainButton();
+}
+
+// 跳过奖励
+function skipReward() {
+    // 增加奖励游戏次数（即使跳过也算使用）
+    gameState.todayRewardPlays = incrementRewardPlays(gameState.playerIP);
+    
+    document.getElementById('rewardChoice').innerHTML = `
+        <div class="skipped-reward">
+            <p>您已跳过本次奖励</p>
+        </div>
+    `;
+    
+    updatePlayAgainButton();
+}
+
+// 更新再玩一次按钮
+function updatePlayAgainButton() {
+    gameState.canGetReward = gameState.todayRewardPlays < GAME_CONFIG.rewardPlayLimit;
+    
     let playAgainText = document.getElementById('playAgainText');
     if (!playAgainText) {
         playAgainText = document.createElement('div');
@@ -644,22 +762,15 @@ async function endGame() {
         playAgainBtn.parentNode.insertBefore(playAgainText, playAgainBtn);
     }
     
-    if (remainingPlays > 0) {
-        playAgainText.innerHTML = `剩余次数：${remainingPlays}`;
-        playAgainBtn.disabled = false;
-        playAgainBtn.style.opacity = '1';
+    if (gameState.canGetReward) {
+        const remaining = GAME_CONFIG.rewardPlayLimit - gameState.todayRewardPlays;
+        playAgainText.innerHTML = `剩余奖励次数：${remaining}`;
     } else {
-        playAgainText.innerHTML = `今日次数已用完`;
-        playAgainBtn.disabled = true;
-        playAgainBtn.style.opacity = '0.5';
-        playAgainBtn.style.cursor = 'not-allowed';
+        playAgainText.innerHTML = `练习模式（无奖励）`;
     }
     
-    endScreen.style.display = 'flex';
-    
-    if (gameState.score >= 1000) {
-        createCelebration();
-    }
+    playAgainBtn.disabled = false;
+    playAgainBtn.style.opacity = '1';
 }
 
 // 获取兑换码
@@ -803,8 +914,7 @@ async function init() {
     initCanvas();
     initEventListeners();
     
-    // 检查游戏次数
-    await checkCanPlay();
+    await checkGameStatus();
     
     if (!window.GameSounds) {
         const script = document.createElement('script');
@@ -815,3 +925,7 @@ async function init() {
 
 // 页面加载完成后初始化
 window.addEventListener('DOMContentLoaded', init);
+
+// 暴露给全局的函数
+window.acceptReward = acceptReward;
+window.skipReward = skipReward;
